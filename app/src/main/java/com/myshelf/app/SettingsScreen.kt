@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -16,7 +17,7 @@ import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +33,11 @@ import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 
 @Composable
-fun SettingsScreen(vm: ShelfViewModel, modifier: Modifier = Modifier) {
+fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric: () -> Unit, modifier: Modifier = Modifier) {
+    var pinDialog by remember { mutableStateOf<Boolean?>(null) }
+    pinDialog?.let { disable ->
+        PinDialog(lock, disable) { pinDialog = null; lock.clearMessage() }
+    }
     val light = MaterialTheme.colorScheme.surface.luminance() > .5f
     val background = if (light) Color(0xFFF8F7FA) else MaterialTheme.colorScheme.surface
     val controlBackground = if (light) Color.White else MaterialTheme.colorScheme.surfaceContainer
@@ -130,7 +135,42 @@ fun SettingsScreen(vm: ShelfViewModel, modifier: Modifier = Modifier) {
             Text(message, Modifier.semantics { liveRegion = LiveRegionMode.Polite }, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Spacer(Modifier.height(30.dp))
+        SectionLabel("Privacy")
+        Spacer(Modifier.height(12.dp))
+        PrivacyRow("App Lock", if (lock.enabled) "Tap to disable" else "Set a 4-digit PIN",
+            checked = lock.enabled, enabled = !lock.busy, accent = vm.accent.swatch) {
+            lock.clearMessage(); pinDialog = lock.enabled
+        }
+        HorizontalDivider(color = outline.copy(alpha = .25f))
+        PrivacyRow("Biometric", if (lock.biometricAvailable) "Unlock with fingerprint or face" else "Set up biometrics on your device",
+            checked = lock.biometricEnabled, enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled), accent = vm.accent.swatch) { value ->
+            if (value) onEnableBiometric() else lock.disableBiometrics()
+        }
+        HorizontalDivider(color = outline.copy(alpha = .25f))
+        PrivacyRow("Instant Lock", if (lock.instantLock) "Lock immediately in background" else "Lock after 1 minute in background",
+            checked = lock.enabled && lock.instantLock, enabled = lock.enabled && !lock.busy, accent = vm.accent.swatch,
+            onChange = lock::setInstant)
+        if (pinDialog == null) lock.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Spacer(Modifier.height(32.dp))
+        SectionLabel("About")
+        Spacer(Modifier.height(22.dp))
+        Text("My Shelf", fontSize = 16.sp)
+        Text("v${BuildConfig.VERSION_NAME} · Your personal media library.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+@Composable
+private fun PrivacyRow(title: String, subtitle: String, checked: Boolean, enabled: Boolean, accent: Color, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
+        .heightIn(min = 88.dp).padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 16.dp)) {
+            Text(title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .5f))
+            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .5f))
+        }
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled,
+            colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.White, checkedBorderColor = Color.Transparent))
     }
 }
 
