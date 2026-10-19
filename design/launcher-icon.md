@@ -1,0 +1,9 @@
+# My Shelf launcher icon
+
+Approved artwork: `app/src/main/res/drawable-nodpi/ic_shelf_glass.png`.
+
+Generated with the built-in imagegen tool. The approved PNG is preserved byte for byte. Android adaptive icons use a lavender background with the artwork inset inside the foreground to keep the shelf within the mask-safe area. Android 13+ also receives a simple shelf silhouette for themed icons. No APK was generated for this change.
+
+## Generation prompt
+
+Use case: logo-brand. Create one polished square Android launcher icon concept for an app named My Shelf. The icon has no text or lettering. Subject: a miniature shelf supporting three chunky upright media spines: a rose-pink book, a warm ivory film case with a few simple dark plum film-perforation marks, and a lilac comic volume tilted slightly against the others. Keep it an immediately readable unified bookshelf symbol, not three separate small icons. Backdrop: a lavender-purple rounded-square tile with generous rounded corners and layered soft depth, inspired by playful purple Android media-app launcher icons. Material: only SLIGHTLY glassy, softly translucent edges and restrained glossy highlights on the top-left bevel; the main forms stay substantial and softly frosted, not clear glass or shiny chrome. A warm pink translucent shelf ledge, lavender base, cream details, soft plum recess shadows. Near-front view with subtle 3D thickness, bold simple silhouette and very few details so it reads clearly at 48 pixels. Center the shelf composition and keep comfortable safe margins inside the tile. Render a single large icon on a plain pale lavender neutral background; rounded tile takes most of the square canvas. No mockup phone, no grid of variants, no labels, no typography, no extra objects, no watermark. Premium friendly tactile finish, subtle glass texture rather than wet plastic or metallic reflection.
