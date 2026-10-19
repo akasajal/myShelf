@@ -131,8 +131,8 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
             } else {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 22.dp)) {
                 Spacer(Modifier.height(20.dp))
-                Text(if (tab == 0) "My Shelf" else collection ?: "Collections", fontFamily = FontFamily.Serif,
-                    fontSize = 38.sp, color = Ink, modifier = Modifier.padding(bottom = 20.dp))
+                Text(if (tab == 0) "My Shelf" else collection ?: "Collections", style = MaterialTheme.typography.headlineSmall,
+                    color = Ink, modifier = Modifier.padding(bottom = 20.dp))
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (tab == 1 && collection == null) {
                     val groups = vm.items.filter { it.collection.isNotBlank() }.groupBy { it.collection.lowercase() }

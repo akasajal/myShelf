@@ -68,7 +68,7 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         dismissButton = { TextButton(vm::dismissImport, enabled = !vm.transferBusy) { Text("Cancel") } }
     )
     Column(modifier.fillMaxSize().background(background).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
-        Text("Settings", fontSize = 24.sp, modifier = Modifier.padding(top = 20.dp, bottom = 56.dp))
+        Text("Settings", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 20.dp, bottom = 56.dp))
         SectionLabel("Appearance")
         Spacer(Modifier.height(26.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
