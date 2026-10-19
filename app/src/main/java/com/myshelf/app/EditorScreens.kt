@@ -18,6 +18,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,9 +27,11 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit,
-    onSave: (ShelfItem) -> Unit, onDelete: (String) -> Unit) {
+    onSave: (ShelfItem) -> Unit, onDelete: (String) -> Unit, initialMediaTypeSelected: Boolean = true) {
     var title by rememberSaveable(initial.id) { mutableStateOf(initial.title) }
     var type by rememberSaveable(initial.id) { mutableStateOf(initial.type) }
+    var mediaTypeSelected by rememberSaveable(initial.id) { mutableStateOf(initialMediaTypeSelected) }
+    var mediaMenuExpanded by remember { mutableStateOf(false) }
     var genre by rememberSaveable(initial.id) { mutableStateOf(initial.genre) }
     var collection by rememberSaveable(initial.id) { mutableStateOf(initial.collection) }
     var cover by rememberSaveable(initial.id) { mutableStateOf(initial.cover) }
@@ -62,23 +66,48 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     Scaffold(topBar = {
         TopAppBar(title = { Text("Title details", fontFamily = FontFamily.Serif) }, navigationIcon = {
             IconButton(leave) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-        }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank()) { Text("Save") } })
+        }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank() && mediaTypeSelected) { Text("Save") } })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Card { Cover(current, Modifier.size(width = 100.dp, height = 145.dp)) }
-                Column(Modifier.padding(start = 20.dp)) {
-                    TextButton({ picker.launch(arrayOf("image/*")) }) { Text("Choose cover") }
-                    if (cover.isNotBlank()) TextButton({ cover = "" }) { Text("Remove cover") }
+            Box(Modifier.align(Alignment.CenterHorizontally)) {
+                Card(onClick = { picker.launch(arrayOf("image/*")) },
+                    modifier = Modifier.size(width = 140.dp, height = 200.dp)
+                        .semantics { contentDescription = if (cover.isBlank()) "Choose cover" else "Change cover" }) {
+                    Cover(current, Modifier.fillMaxSize(), placeholder = { CoverDoodle() })
+                }
+                if (cover.isNotBlank()) {
+                    FilledIconButton(onClick = { cover = ""; imageError = false },
+                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .9f))) {
+                        Icon(Icons.Outlined.Close, "Remove cover", Modifier.size(18.dp))
+                    }
                 }
             }
             if (imageError) Text("Can't access this image. Choose another.", color = MaterialTheme.colorScheme.error)
             EditorField("Title *", title, { title = it })
-            Text("Media type", fontSize = 12.sp)
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(MediaType.entries) { media -> FilterChip(type == media, { if (type != media) { type = media; genre = "" } }, label = { Text(media.singular) }) }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Media type", Modifier.weight(1f))
+                Box {
+                    TextButton(onClick = { mediaMenuExpanded = true },
+                        modifier = Modifier.semantics { contentDescription = "Media type: ${if (mediaTypeSelected) type.singular else "Select"}" }) {
+                        Text(if (mediaTypeSelected) type.singular else "Select")
+                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Outlined.ExpandMore, null, Modifier.size(20.dp))
+                    }
+                    DropdownMenu(expanded = mediaMenuExpanded, onDismissRequest = { mediaMenuExpanded = false }) {
+                        MediaType.entries.forEach { media ->
+                            DropdownMenuItem(text = { Text(media.singular) }, onClick = {
+                                if (type != media) { type = media; genre = "" }
+                                mediaTypeSelected = true
+                                mediaMenuExpanded = false
+                            }, trailingIcon = {
+                                if (mediaTypeSelected && type == media) Icon(Icons.Outlined.Check, null, Modifier.size(18.dp))
+                            })
+                        }
+                    }
+                }
             }
-            EditorField("Genre · ${type.label}", genre, { genre = it })
+            EditorField(if (mediaTypeSelected) "Genre · ${type.label}" else "Genre", genre, { genre = it })
             EditorField("Collection", collection, { collection = it })
             if (collections.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(collections) { name -> SuggestionChip({ collection = name }, label = { Text(name) }) }

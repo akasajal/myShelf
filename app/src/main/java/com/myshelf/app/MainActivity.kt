@@ -63,7 +63,8 @@ private fun ShelfApp(vm: ShelfViewModel = viewModel()) {
     when {
         editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
-            onDelete = { vm.delete(it); editing = null })
+            onDelete = { vm.delete(it); editing = null },
+            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id } || type != null)
         else -> Scaffold(
             containerColor = Paper,
             floatingActionButton = {
@@ -147,17 +148,21 @@ private fun EmptyShelf(title: String, message: String, modifier: Modifier = Modi
 }
 
 @Composable
-fun Cover(item: ShelfItem, modifier: Modifier = Modifier) {
+fun Cover(item: ShelfItem, modifier: Modifier = Modifier, placeholder: @Composable () -> Unit = { CoverFallback(item) }) {
     SubcomposeAsyncImage(model = item.cover.ifBlank { null }, contentDescription = "Cover for ${item.title}",
         contentScale = ContentScale.Crop, modifier = modifier,
-        loading = { CoverFallback(item) }, error = { CoverFallback(item) })
+        loading = { placeholder() }, error = { placeholder() })
 }
 
 @Composable
 private fun CoverFallback(item: ShelfItem) {
+    if (item.title.isBlank()) {
+        CoverDoodle()
+        return
+    }
     Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF607564), Color(0xFF263F36))))
         .padding(16.dp), contentAlignment = Alignment.Center) {
-        Text(item.title.ifBlank { "No cover" }, fontFamily = FontFamily.Serif, color = Color(0xFFF4EEDC), fontSize = 24.sp,
+        Text(item.title, fontFamily = FontFamily.Serif, color = Color(0xFFF4EEDC), fontSize = 24.sp,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 5, overflow = TextOverflow.Ellipsis)
     }
 }
