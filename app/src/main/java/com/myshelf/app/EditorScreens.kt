@@ -1,6 +1,5 @@
 package com.myshelf.app
 
-import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,12 +16,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -42,48 +41,56 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     var notes by rememberSaveable(initial.id) { mutableStateOf(initial.notes) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
-    var imageError by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    var showCoverSheet by rememberSaveable(initial.id) { mutableStateOf(false) }
+    val coverImporter: CoverPickerViewModel = viewModel()
+    val coverBusy = coverImporter.busyFor == initial.id
     val current = initial.copy(title = title.trim(), type = type, genre = genre.trim(), collection = collection.trim(),
         cover = cover.trim(), creator = creator.trim(), year = year.trim(), rating = rating, progress = progress, notes = notes.trim())
-    val leave = { if (current != initial) confirmDiscard = true else onBack() }
+    val exit = { coverImporter.cancel(initial.id); onBack() }
+    val leave = { if (current != initial) confirmDiscard = true else exit() }
     BackHandler(onBack = leave)
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
-            try {
-                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                cover = uri.toString(); imageError = false
-            } catch (_: SecurityException) { imageError = true }
+            coverImporter.choose(initial.id, uri)
         }
     }
+    LaunchedEffect(coverImporter.result) {
+        coverImporter.result?.takeIf { it.itemId == initial.id }?.let {
+            cover = it.uri
+            showCoverSheet = false
+            coverImporter.consume()
+        }
+    }
+    if (showCoverSheet) CoverSheet(initial.id, cover.isNotBlank(), coverImporter,
+        onChoose = { showCoverSheet = false; picker.launch(arrayOf("image/*")) },
+        onRemove = { cover = ""; coverImporter.cancel(initial.id); showCoverSheet = false },
+        onDismiss = { showCoverSheet = false })
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Remove this title?") },
         text = { Text("Your rating and notes will also be deleted.") },
-        confirmButton = { TextButton({ onDelete(initial.id) }) { Text("Remove") } },
+        confirmButton = { TextButton({ coverImporter.cancel(initial.id); onDelete(initial.id) }) { Text("Remove") } },
         dismissButton = { TextButton({ confirmDelete = false }) { Text("Keep") } })
     if (confirmDiscard) AlertDialog(onDismissRequest = { confirmDiscard = false }, title = { Text("Discard changes?") },
-        confirmButton = { TextButton(onBack) { Text("Discard") } },
+        confirmButton = { TextButton(exit) { Text("Discard") } },
         dismissButton = { TextButton({ confirmDiscard = false }) { Text("Keep editing") } })
     Scaffold(topBar = {
         TopAppBar(title = { Text("Title details", fontFamily = FontFamily.Serif) }, navigationIcon = {
             IconButton(leave) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-        }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank() && mediaTypeSelected) { Text("Save") } })
+        }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank() && mediaTypeSelected && !coverBusy) { Text("Save") } })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.align(Alignment.CenterHorizontally)) {
-                Card(onClick = { picker.launch(arrayOf("image/*")) },
+                Card(onClick = { coverImporter.clearError(); showCoverSheet = true },
                     modifier = Modifier.size(width = 140.dp, height = 200.dp)
                         .semantics { contentDescription = if (cover.isBlank()) "Choose cover" else "Change cover" }) {
                     Cover(current, Modifier.fillMaxSize(), placeholder = { CoverDoodle() })
                 }
-                if (cover.isNotBlank()) {
-                    FilledIconButton(onClick = { cover = ""; imageError = false },
-                        modifier = Modifier.align(Alignment.TopEnd).padding(2.dp),
-                        colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = .9f))) {
-                        Icon(Icons.Outlined.Close, "Remove cover", Modifier.size(18.dp))
-                    }
+                if (coverBusy) {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center).size(28.dp))
                 }
             }
-            if (imageError) Text("Can't access this image. Choose another.", color = MaterialTheme.colorScheme.error)
+            if (!showCoverSheet && coverImporter.errorFor == initial.id) coverImporter.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
             EditorField("Title *", title, { title = it })
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Media type", Modifier.weight(1f))

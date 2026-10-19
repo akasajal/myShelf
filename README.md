@@ -1,6 +1,6 @@
 # My Shelf
 
-A fully offline personal Android media tracker, built with Kotlin and Jetpack Compose, with cover-first browsing and customizable accents.
+A local-first personal Android media tracker, built with Kotlin and Jetpack Compose, with cover-first browsing and customizable accents.
 
 ## Included
 
@@ -9,13 +9,13 @@ A fully offline personal Android media tracker, built with Kotlin and Jetpack Co
 - Genre filters scoped to one media type. Select Books before filtering book genres.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
-- Manual title entry and covers selected from your device, with persistent image access.
+- Manual title entry and a cover sheet for device images, clipboard images, and direct image links.
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
 - A third Settings tab with saved System, Dark, and Light themes and six accent colors.
 - Portable ZIP import/export including available covers, with merge or replace on import.
 - Privacy controls for a four-digit PIN, optional biometric unlock, and background locking.
 
-No accounts, API keys, catalog calls, analytics, or internet permission. Automatic metadata fetching is excluded: a complete film/book/comic catalog would have to be shipped with the app to offer title lookup offline.
+No accounts, API keys, catalog calls, or analytics. The app works offline; it accesses the internet only when you explicitly add a cover from an HTTPS image link. Automatic metadata fetching is excluded.
 
 ## Run
 
@@ -33,6 +33,12 @@ In Settings, Export opens Android's save dialog for a My Shelf ZIP. Import opens
 
 Covers are included as bytes rather than device-specific document links. Restored covers are stored in app-private files so the backup works on another device. Unavailable source images are omitted and reported after export. Backups support 2,000 titles, 8 MB per cover, 60 MB total cover data, and 4 MB of metadata. Import rejects malformed or unsupported files, unsafe archive paths, and excessive unpacked data. Save a backup before uninstalling if you want to restore your shelf later.
 
+## Cover images
+
+Tap the cover or doodle to open a bottom sheet: Choose image, Paste image, Paste image link, and Remove cover when present. Paste image expects an actual clipboard image URI; copied website links belong in Paste image link. The link field can be edited before tapping Add cover and expects a direct HTTPS image, not a web page. Clipboard contents are read only after a paste action.
+
+All new covers are validated, resized to at most 1,600 pixels on the longest edge, and saved as app-private JPEGs. Downloads are limited to 8 MB with timeouts and HTTPS-only redirects. An unsuccessful or cancelled import preserves the current cover. Once saved, gallery, pasted, and downloaded covers work offline and are included in backups. Existing cover document links from older versions remain supported.
+
 ## App lock
 
 Enable App Lock in Settings, enter four digits, then enter them again to confirm. Disabling the lock requires that PIN. Biometrics can be enabled after PIN setup and a successful Android biometric prompt; unsupported or unenrolled devices keep PIN unlock available.
@@ -47,4 +53,4 @@ The app stores a salted HMAC verifier using a device-bound Android Keystore key,
 
 `ShelfData.kt` owns the model, filtering, and on-device persistence. `ShelfJson.kt` handles metadata serialization and validation; `ShelfBackup.kt` handles portable backups. `MainActivity.kt` contains the shelf and collection views, `EditorScreens.kt` contains editing, and `SettingsScreen.kt` / `ShelfTheme.kt` provide appearance and data controls.
 
-The shelf starts empty. One genre and one collection are supported per title. There is no cloud sync or episode/chapter tracking yet. Library data is stored in app-private preferences, and uninstalling the app removes it. User-picked covers reference the selected document; deleting that document can make the cover unavailable. Missing images use a typographic cover fallback. Choose an image available on your device to use it offline.
+The shelf starts empty. One genre and one collection are supported per title. There is no cloud sync or episode/chapter tracking yet. Library data and new covers are stored privately on the device, and uninstalling the app removes them. Older cover document links may become unavailable if their source document is deleted. Missing covers use a doodle or typographic fallback.
