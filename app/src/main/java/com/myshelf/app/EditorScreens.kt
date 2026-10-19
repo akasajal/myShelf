@@ -53,14 +53,14 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
         }
     }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text("Remove this title?") },
-        text = { Text("This removes the title and your notes from your shelf.") },
+        text = { Text("Your rating and notes will also be deleted.") },
         confirmButton = { TextButton({ onDelete(initial.id) }) { Text("Remove") } },
         dismissButton = { TextButton({ confirmDelete = false }) { Text("Keep") } })
     if (confirmDiscard) AlertDialog(onDismissRequest = { confirmDiscard = false }, title = { Text("Discard changes?") },
         confirmButton = { TextButton(onBack) { Text("Discard") } },
         dismissButton = { TextButton({ confirmDiscard = false }) { Text("Keep editing") } })
     Scaffold(topBar = {
-        TopAppBar(title = { Text("Make it yours", fontFamily = FontFamily.Serif) }, navigationIcon = {
+        TopAppBar(title = { Text("Title details", fontFamily = FontFamily.Serif) }, navigationIcon = {
             IconButton(leave) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
         }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank()) { Text("Save") } })
     }) { padding ->
@@ -68,19 +68,18 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Card { Cover(current, Modifier.size(width = 100.dp, height = 145.dp)) }
                 Column(Modifier.padding(start = 20.dp)) {
-                    Text("Your edition. Your cover.", fontFamily = FontFamily.Serif, fontSize = 20.sp)
-                    TextButton({ picker.launch(arrayOf("image/*")) }) { Text("Choose cover image") }
+                    TextButton({ picker.launch(arrayOf("image/*")) }) { Text("Choose cover") }
                     if (cover.isNotBlank()) TextButton({ cover = "" }) { Text("Remove cover") }
                 }
             }
-            if (imageError) Text("Couldn't keep access to that image. Please choose another.", color = MaterialTheme.colorScheme.error)
+            if (imageError) Text("Can't access this image. Choose another.", color = MaterialTheme.colorScheme.error)
             EditorField("Title *", title, { title = it })
             Text("Media type", fontSize = 12.sp)
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(MediaType.entries) { media -> FilterChip(type == media, { if (type != media) { type = media; genre = "" } }, label = { Text(media.singular) }) }
             }
-            EditorField("Genre · ${type.label} only", genre, { genre = it })
-            EditorField("Collection (e.g. Marvel, DC)", collection, { collection = it })
+            EditorField("Genre · ${type.label}", genre, { genre = it })
+            EditorField("Collection", collection, { collection = it })
             if (collections.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(collections) { name -> SuggestionChip({ collection = name }, label = { Text(name) }) }
             }
@@ -88,7 +87,7 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
                 EditorField("Year", year, { year = it }, Modifier.weight(1f))
                 EditorField("Creator / author", creator, { creator = it }, Modifier.weight(2f))
             }
-            Text("Where you're at", fontFamily = FontFamily.Serif, fontSize = 21.sp)
+            Text("Status", fontFamily = FontFamily.Serif, fontSize = 21.sp)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Progress.entries.forEach { state -> FilterChip(progress == state, { progress = state }, label = { Text(state.label) }) }
             }
@@ -102,8 +101,7 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
                         tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
                 } }
             }
-            OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text("A thought to remember") }, minLines = 3)
-            Button({ onSave(current) }, enabled = title.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Save to my shelf") }
+            OutlinedTextField(notes, { notes = it }, Modifier.fillMaxWidth(), label = { Text("Notes") }, minLines = 3)
             TextButton({ confirmDelete = true }, modifier = Modifier.align(Alignment.CenterHorizontally)) { Text("Remove from shelf", color = MaterialTheme.colorScheme.error) }
         }
     }

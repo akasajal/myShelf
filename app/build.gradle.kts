@@ -30,4 +30,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("io.coil-kt:coil-compose:2.7.0")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
