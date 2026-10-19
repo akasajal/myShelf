@@ -37,6 +37,8 @@ Covers are included as bytes rather than device-specific document links. Restore
 
 Enable App Lock in Settings, enter four digits, then enter them again to confirm. Disabling the lock requires that PIN. Biometrics can be enabled after PIN setup and a successful Android biometric prompt; unsupported or unenrolled devices keep PIN unlock available.
 
+Setup, confirmation, disabling, and unlocking share a full-screen numeric keypad with four masked dots and backspace. Entering the fourth digit advances or submits automatically. No system keyboard or extra submit button is needed. The setup screen has a back arrow; unlock offers biometrics when enabled and available.
+
 An enabled lock protects every cold launch. Instant Lock locks when the activity moves into the background; with it off, returning after one minute requires authentication. Rotation preserves the current session, and shelf/editor state is restored after unlocking. File pickers count as leaving the app. Screenshots and recent-app previews are blocked while app lock is enabled.
 
 The app stores a salted HMAC verifier using a device-bound Android Keystore key, not the PIN. Five failed PIN attempts trigger a persisted 30-second cooldown. Lock settings stay on the device and are excluded from exports. App lock is an access gate, not shelf encryption; exported ZIP backups are unencrypted. There is no PIN recovery flow.
