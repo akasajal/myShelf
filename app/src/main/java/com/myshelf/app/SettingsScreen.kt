@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -106,12 +108,16 @@ fun SettingsScreen(vm: ShelfViewModel, modifier: Modifier = Modifier) {
             enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp), shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.outlinedButtonColors(containerColor = controlBackground, contentColor = MaterialTheme.colorScheme.onSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, outline)) {
+            Icon(Icons.Outlined.FileDownload, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
             Text("Import")
         }
         OutlinedButton(onClick = { exporter.launch("my-shelf-${LocalDate.now()}.zip") },
             enabled = enabled, modifier = Modifier.weight(1f).heightIn(min = 48.dp), shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.outlinedButtonColors(containerColor = controlBackground, contentColor = MaterialTheme.colorScheme.onSurface),
             border = androidx.compose.foundation.BorderStroke(1.dp, outline)) {
+            Icon(Icons.Outlined.FileUpload, contentDescription = null, modifier = Modifier.size(ButtonDefaults.IconSize))
+            Spacer(Modifier.width(ButtonDefaults.IconSpacing))
             Text("Export")
         }
         }
