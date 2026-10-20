@@ -40,7 +40,7 @@ fun SeasonSection(seasons: List<Season>, ended: Boolean, onChange: (List<Season>
         Row(Modifier.fillMaxWidth().clickable { editing = season.number }.padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("Season ${season.number}")
+                Text(season.displayName)
                 val episodes = if (season.episodes > 0) "${season.watched}/${season.episodes} episodes" else "${season.watched} episodes watched"
                 Text("${season.progress.label} · $episodes", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -68,9 +68,10 @@ fun SeasonSection(seasons: List<Season>, ended: Boolean, onChange: (List<Season>
 }
 
 @Composable
-private fun SeasonDialog(initial: Season, existing: Boolean, occupied: Set<Int>, onDismiss: () -> Unit,
+internal fun SeasonDialog(initial: Season, existing: Boolean, occupied: Set<Int>, onDismiss: () -> Unit,
     onSave: (Season) -> Unit, onRemove: () -> Unit) {
     var number by rememberSaveable(initial.number) { mutableStateOf(initial.number.toString()) }
+    var name by rememberSaveable(initial.number) { mutableStateOf(initial.name) }
     var total by rememberSaveable(initial.number) { mutableStateOf(initial.episodes.takeIf { it > 0 }?.toString().orEmpty()) }
     var watched by rememberSaveable(initial.number) { mutableStateOf(initial.watched.toString()) }
     var progress by rememberSaveable(initial.number) { mutableStateOf(initial.progress) }
@@ -99,6 +100,7 @@ private fun SeasonDialog(initial: Season, existing: Boolean, occupied: Set<Int>,
                     label = { Text("Season number") }, singleLine = true, isError = duplicate,
                     supportingText = { if (duplicate) Text("This season already exists.") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                OutlinedTextField(name, { if (it.length <= 200) name = it }, label = { Text("Season name (optional)") }, singleLine = true)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(watched, {
                         if (it.length <= 4 && it.all(Char::isDigit)) { watched = it; updateEpisodeProgress() }
@@ -140,7 +142,7 @@ private fun SeasonDialog(initial: Season, existing: Boolean, occupied: Set<Int>,
         confirmButton = { TextButton(enabled = valid, onClick = {
             val count = requireNotNull(episodeCount)
             onSave(Season(requireNotNull(seasonNumber), progress, rating,
-                if (progress == Progress.FINISHED && count > 0) count else requireNotNull(watchedCount), count))
+                if (progress == Progress.FINISHED && count > 0) count else requireNotNull(watchedCount), count, name.trim()))
         }) { Text("Done") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
 }

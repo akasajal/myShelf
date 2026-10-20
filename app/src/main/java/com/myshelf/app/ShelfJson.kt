@@ -38,7 +38,7 @@ object ShelfJson {
                     require(ended is Boolean) { "Invalid series ending in backup." }
                     ended
                 } else false
-            )
+            ).let { it.copy(progress = it.seasonProgress()) }
         }
         require(items.map { it.id }.distinct().size == items.size) { "Duplicate title IDs in backup." }
         return items
@@ -48,6 +48,7 @@ object ShelfJson {
         seasons.forEach { season -> put(JSONObject().apply {
             put("number", season.number); put("progress", season.progress.name)
             put("rating", season.rating); put("watched", season.watched); put("episodes", season.episodes)
+            put("name", season.name)
         }) }
     }
 
@@ -61,7 +62,12 @@ object ShelfJson {
                 return value.toInt()
             }
             Season(integer("number", 1..999), Progress.valueOf(o.getString("progress")),
-                integer("rating", 0..5), integer("watched", 0..9999), integer("episodes", 0..9999)).also {
+                integer("rating", 0..5), integer("watched", 0..9999), integer("episodes", 0..9999),
+                if (o.has("name")) {
+                    val name = o.get("name")
+                    require(name is String && name.length <= 200) { "Invalid season name." }
+                    name
+                } else "").also {
                 require(it.episodes == 0 || it.watched <= it.episodes) { "Watched episodes exceed the season total." }
                 require(it.progress != Progress.FINISHED || it.episodes == 0 || it.watched == it.episodes) { "Finished season has unwatched episodes." }
             }

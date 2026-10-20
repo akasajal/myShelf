@@ -11,6 +11,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -39,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
+import kotlinx.coroutines.launch
 
 private val Ink: Color @Composable get() = MaterialTheme.colorScheme.onSurface
 private val Green: Color @Composable get() = MaterialTheme.colorScheme.primary
@@ -95,21 +99,58 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiometric: () -> Unit) {
-    var typeName by rememberSaveable { mutableStateOf<String?>(null) }
-    val type = typeName?.let(MediaType::valueOf)
     var collection by rememberSaveable { mutableStateOf<String?>(null) }
-    var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var contexts by rememberSaveable(stateSaver = BrowsingContextsSaver) { mutableStateOf<Map<String, BrowsingContext>>(emptyMap()) }
+    val browseKey = if (tab == 0) "shelf" else collection?.let { "collection:${collectionKey(it)}" } ?: "collections"
+    val context = contexts[browseKey] ?: BrowsingContext()
+    val type = context.media?.let(MediaType::valueOf)
+    val query = context.query
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var quickId by rememberSaveable { mutableStateOf<String?>(null) }
+    var quickAction by rememberSaveable { mutableStateOf<TitleAction?>(null) }
     var editing by vm::editing
     val collectionsListState = rememberLazyListState()
     val gridStates = rememberSaveableStateHolder()
+    val detailsState = rememberSaveableStateHolder()
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val collections = vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct()
+    val selected = vm.items.find { it.id == selectedId }
+    val quickItem = vm.items.find { it.id == quickId }
+    val removeTitle: (String) -> Unit = remove@{ id ->
+        val removed = vm.delete(id) ?: return@remove
+        if (selectedId == id) selectedId = null
+        if (editing?.id == id) editing = null
+        quickId = null; quickAction = null
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            if (snackbar.showSnackbar("Removed ${removed.item.title}", actionLabel = "Undo", withDismissAction = true,
+                    duration = SnackbarDuration.Long) == SnackbarResult.ActionPerformed) vm.undoDelete(removed)
+        }
+    }
+    BackHandler(enabled = editing == null && selected == null && tab == 1 && collection != null) { collection = null }
+    if (quickItem != null) {
+        val action = quickAction
+        if (action == null) TitleActionsSheet(quickItem, onAction = {
+            if (it == TitleAction.REMOVE) removeTitle(quickItem.id) else quickAction = it
+        }, onDismiss = { quickId = null })
+        else key(quickItem.id, action) {
+            TitleActionDialog(quickItem, action, collections, vm::save) { quickId = null; quickAction = null }
+        }
+    }
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
     val visible = sortShelf(filterShelf(vm.items, type, null, collection, query), itemOrder)
+    Box(Modifier.fillMaxSize()) {
     when {
-        editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
+        editing != null -> EditorRoute(editing!!, vm.items,
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
-            onDelete = { vm.delete(it); editing = null },
-            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id })
+            onDelete = removeTitle,
+            onOpenExisting = { editing = null; selectedId = it.id })
+        selected != null -> detailsState.SaveableStateProvider(selected.id) {
+            TitleDetails(selected, collections, onBack = { selectedId = null }, onEdit = { editing = selected },
+                onSave = vm::save, onRemove = { removeTitle(selected.id) })
+        }
         else -> Scaffold(
             containerColor = Paper,
             floatingActionButtonPosition = FabPosition.Center,
@@ -118,7 +159,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically) {
                         if (tab == 0 || collection != null) {
-                            ShelfFilters(type, onType = { typeName = it?.name })
+                            ShelfFilters(type, onType = { contexts = contexts + (browseKey to context.copy(media = it?.name)) })
                         } else Spacer(Modifier.weight(1f))
                         AddShelfButton {
                             editing = ShelfItem(collection = collection.orEmpty())
@@ -130,7 +171,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                 NavigationBar(containerColor = Paper) {
                     NavigationBarItem(selected = tab == 0, enabled = !vm.transferBusy, onClick = { tab = 0; collection = null },
                         icon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, null) }, label = { Text("My shelf") })
-                    NavigationBarItem(selected = tab == 1, enabled = !vm.transferBusy, onClick = { tab = 1; typeName = null; collection = null },
+                    NavigationBarItem(selected = tab == 1, enabled = !vm.transferBusy, onClick = { tab = 1; collection = null },
                         icon = { Icon(Icons.Outlined.CollectionsBookmark, null) }, label = { Text("Collections") })
                     NavigationBarItem(selected = tab == 2, enabled = !vm.transferBusy, onClick = { tab = 2 },
                         icon = { Icon(Icons.Outlined.Settings, null) }, label = { Text("Settings") })
@@ -167,7 +208,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         }
                     }
                 } else {
-                    OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("Search shelf") },
+                    OutlinedTextField(query, { contexts = contexts + (browseKey to context.copy(query = it)) }, Modifier.fillMaxWidth(), placeholder = { Text("Search shelf") },
                         leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true, shape = RoundedCornerShape(18.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.weight(1f))
@@ -180,18 +221,24 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     }
                     if (visible.isEmpty()) EmptyShelf(if (vm.items.isEmpty()) "No titles yet" else "No matches",
                         if (vm.items.isEmpty()) "Add a title to get started." else "Try another filter.", Modifier.weight(1f))
-                    else gridStates.SaveableStateProvider(collection?.let { "collection:$it" } ?: "shelf") {
+                    else gridStates.SaveableStateProvider(browseKey) {
                         val gridState = rememberLazyGridState()
                         LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), state = gridState,
                             horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
                             verticalArrangement = Arrangement.spacedBy(22.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                            items(visible, key = { it.id }) { item -> ShelfCard(item, compact = vm.cardsPerRow > 2) { editing = item } }
+                            items(visible, key = { it.id }) { item ->
+                                ShelfCard(item, compact = vm.cardsPerRow > 2, details = vm.cardDetails,
+                                    onClick = { selectedId = item.id }, onLongClick = { quickId = item.id; quickAction = null })
+                            }
                         }
                     }
                 }
             }
             }
         }
+    }
+    SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp)
+        .padding(bottom = if (editing == null && selected == null) 96.dp else 24.dp).navigationBarsPadding())
     }
 }
 
@@ -227,21 +274,24 @@ private fun CoverFallback(item: ShelfItem) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ShelfCard(item: ShelfItem, compact: Boolean, onClick: () -> Unit) {
-    Column(Modifier.clickable(onClick = onClick)) {
+private fun ShelfCard(item: ShelfItem, compact: Boolean, details: CardDetails, onClick: () -> Unit, onLongClick: () -> Unit) {
+    val minimal = details == CardDetails.COMPACT
+    Column(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick, onLongClickLabel = "Title actions")) {
         Card(shape = RoundedCornerShape(12.dp)) {
             Box {
                 Cover(item, Modifier.fillMaxWidth().aspectRatio(.69f))
-                Surface(Modifier.align(Alignment.TopStart).padding(8.dp), shape = RoundedCornerShape(6.dp), color = Paper.copy(alpha = .94f)) {
-                    Text(item.type.singular.uppercase(), Modifier.padding(horizontal = if (compact) 5.dp else 7.dp, vertical = 4.dp),
-                        fontSize = if (compact) 8.sp else 9.sp, letterSpacing = .8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Surface(Modifier.align(Alignment.TopStart).padding(6.dp), shape = RoundedCornerShape(5.dp), color = Paper.copy(alpha = .94f)) {
+                    Text(item.type.singular.uppercase(), Modifier.padding(horizontal = 5.dp, vertical = 3.dp),
+                        fontSize = 8.sp, letterSpacing = .5.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
-        Text(item.title, fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+        Text(item.title, fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.SemiBold,
+            minLines = if (minimal) 1 else 2, maxLines = if (minimal) 1 else 2,
             overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 9.dp))
-        Text(listOf(item.genre, item.year).filter { it.isNotBlank() }.joinToString(" · "), fontSize = if (compact) 10.sp else 12.sp,
+        if (!minimal) Text(listOf(item.genre, item.year).filter { it.isNotBlank() }.joinToString(" · "), fontSize = if (compact) 10.sp else 12.sp,
             color = Ink.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(item.statusLabel, fontSize = if (compact) 9.sp else 10.sp, color = Green, modifier = Modifier.weight(1f),

@@ -50,6 +50,8 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var cardsPerRow by mutableIntStateOf(prefs.getInt("cards_per_row", 2).coerceIn(2, 4))
         private set
+    var cardDetails by mutableStateOf(runCatching { CardDetails.valueOf(prefs.getString("card_details", "COMFORTABLE")!!) }.getOrDefault(CardDetails.COMFORTABLE))
+        private set
     var shelfSort by mutableStateOf(runCatching { ItemSort.valueOf(prefs.getString("sort_shelf", "NEWEST")!!) }.getOrDefault(ItemSort.NEWEST))
         private set
     var collectionsSort by mutableStateOf(runCatching { CollectionSort.valueOf(prefs.getString("sort_collections", "RECENT")!!) }.getOrDefault(CollectionSort.RECENT))
@@ -79,11 +81,23 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
 
     fun save(item: ShelfItem) {
         if (loadError != null || transferBusy) return
-        items = if (items.any { it.id == item.id }) items.map { if (it.id == item.id) item else it }
-        else listOf(item) + items
+        val normalized = item.copy(progress = item.seasonProgress())
+        items = if (items.any { it.id == item.id }) items.map { if (it.id == item.id) normalized else it }
+        else listOf(normalized) + items
         persist()
     }
-    fun delete(id: String) { if (loadError == null && !transferBusy) { items = items.filterNot { it.id == id }; persist() } }
+    fun delete(id: String): RemovedTitle? {
+        if (loadError != null || transferBusy) return null
+        val index = items.indexOfFirst { it.id == id }
+        if (index < 0) return null
+        val removed = RemovedTitle(items[index], index)
+        items = items.filterNot { it.id == id }; persist()
+        return removed
+    }
+    fun undoDelete(removed: RemovedTitle) {
+        if (loadError != null || transferBusy) return
+        items = restoreTitle(items, removed); persist()
+    }
     private fun persist() {
         prefs.edit().putString("items", ShelfJson.encode(items).toString()).apply()
     }
@@ -94,6 +108,9 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         require(count in 2..4)
         cardsPerRow = count
         prefs.edit().putInt("cards_per_row", count).apply()
+    }
+    fun updateCardDetails(value: CardDetails) {
+        cardDetails = value; prefs.edit().putString("card_details", value.name).apply()
     }
     fun updateShelfSort(order: ItemSort) { shelfSort = order; prefs.edit().putString("sort_shelf", order.name).apply() }
     fun updateCollectionsSort(order: CollectionSort) { collectionsSort = order; prefs.edit().putString("sort_collections", order.name).apply() }
@@ -145,11 +162,12 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun importShelf(replace: Boolean) {
+    fun importShelf(mode: ImportMode) {
         val backup = pendingImport ?: return
         if (transferBusy || loadError != null) return
         val previous = items
-        val incoming = if (replace) backup.items else backup.items.filter { item -> previous.none { it.id == item.id } }
+        val changes = previewChanges(previous, backup.items)
+        val incoming = if (mode == ImportMode.SKIP_EXISTING) changes.added else backup.items
         transferBusy = true; transferMessage = null
         viewModelScope.launch {
             val created = mutableListOf<File>()
@@ -164,13 +182,16 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
                             item.copy(cover = Uri.fromFile(file).toString())
                         }
                     }
-                    val combined = if (replace) imported else previous + imported
+                    val combined = mergeShelf(previous, imported, mode)
                     check(prefs.edit().putString("items", ShelfJson.encode(combined).toString()).commit()) { "Couldn't save imported titles." }
                     combined
                 }
                 items = next; pendingImport = null
-                transferMessage = if (replace) "Restored ${incoming.size} titles." else
-                    "Imported ${incoming.size} titles; skipped ${backup.items.size - incoming.size} existing titles."
+                transferMessage = when (mode) {
+                    ImportMode.REPLACE -> "Restored ${incoming.size} titles."
+                    ImportMode.UPDATE_MATCHING -> "Added ${changes.added.size} titles; updated ${changes.matching.size}."
+                    ImportMode.SKIP_EXISTING -> "Added ${changes.added.size} titles; skipped ${changes.matching.size} existing titles."
+                }
             } catch (e: CancellationException) { throw e }
             catch (_: Exception) {
                 withContext(Dispatchers.IO) { created.forEach { it.delete() } }

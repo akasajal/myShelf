@@ -35,12 +35,33 @@ class SeasonsTest {
     }
 
     @Test fun seasonsRatingsEpisodesAndEndingSurvivePortableBackup() {
-        val item = series.copy(seriesEnded = true, progress = series.seasonProgress())
+        val item = series.copy(seriesEnded = true, progress = series.seasonProgress(),
+            seasons = series.seasons.map { it.copy(name = "Story arc ${it.number}") })
         val bytes = ByteArrayOutputStream()
         ShelfBackup.write(bytes, listOf(item)) { null }
         val imported = ShelfBackup.read(bytes.toByteArray().inputStream())
         assertEquals(listOf(item), imported.items)
         assertEquals(1, imported.items.size)
+    }
+
+    @Test fun episodeButtonsFinishAndReopenSeasonsWithinBounds() {
+        val season = Season(1, watched = 5, episodes = 6)
+        val finished = season.withWatched(6)
+        assertEquals(Progress.FINISHED, finished.progress)
+        assertEquals(6, finished.withWatched(7).watched)
+        assertEquals(Progress.ACTIVE, finished.withWatched(5).progress)
+        assertEquals(Progress.PLANNED, finished.withWatched(-1).progress)
+        assertEquals(9999, Season(1).withWatched(10000).watched)
+        assertEquals(Progress.ACTIVE, Season(1, Progress.PAUSED).withWatched(1).progress)
+        assertEquals(6, season.withProgress(Progress.FINISHED).watched)
+        assertEquals(0, Season(1).withProgress(Progress.FINISHED).watched)
+        assertEquals("Caught up", series.withSeason(series.seasons.last().withProgress(Progress.FINISHED)).statusLabel)
+    }
+
+    @Test fun oldSeasonDataWithoutNamesStillLoads() {
+        val json = ShelfJson.encodeSeasons(listOf(Season(1)))
+        json.getJSONObject(0).remove("name")
+        assertEquals("", ShelfJson.decodeSeasons(json).single().name)
     }
 
     @Test fun oldBackupsWithoutSeasonFieldsStillLoad() {

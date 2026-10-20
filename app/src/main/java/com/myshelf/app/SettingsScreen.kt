@@ -50,23 +50,7 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         if (uri != null) vm.previewImport(uri)
     }
     val backup = vm.pendingImport
-    if (backup != null) AlertDialog(
-        onDismissRequest = vm::dismissImport,
-        title = { Text("Import ${backup.items.size} titles?") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("Merge adds new titles and keeps existing entries. Replace overwrites your shelf.")
-                if (backup.items.isEmpty()) Text("This backup is empty. Replace will clear your shelf.")
-            }
-        },
-        confirmButton = {
-            Column {
-                TextButton({ vm.importShelf(false) }, enabled = !vm.transferBusy) { Text("Merge") }
-                TextButton({ vm.importShelf(true) }, enabled = !vm.transferBusy) { Text("Replace", color = MaterialTheme.colorScheme.error) }
-            }
-        },
-        dismissButton = { TextButton(vm::dismissImport, enabled = !vm.transferBusy) { Text("Cancel") } }
-    )
+    if (backup != null) key(backup) { ImportPreviewDialog(vm, backup) }
     Column(modifier.fillMaxSize().background(background).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
         Text("Settings", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.padding(top = 20.dp, bottom = 56.dp))
         SectionLabel("Appearance")
@@ -121,6 +105,22 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
                         Text(count.toString(), Modifier.padding(start = if (selected) 6.dp else 0.dp), fontSize = 13.sp)
                     }
                     if (count < 4) VerticalDivider(Modifier.height(48.dp), color = outline)
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Card details", Modifier.weight(.36f), fontSize = 16.sp)
+            Row(Modifier.weight(.64f).selectableGroup().clip(RoundedCornerShape(28.dp))
+                .border(1.dp, outline, RoundedCornerShape(28.dp))) {
+                CardDetails.entries.forEachIndexed { index, option ->
+                    val selected = vm.cardDetails == option
+                    Box(Modifier.weight(1f).background(if (selected) selectedBackground else controlBackground)
+                        .selectable(selected, onClick = { vm.updateCardDetails(option) }, role = Role.RadioButton)
+                        .heightIn(min = 48.dp), contentAlignment = Alignment.Center) {
+                        Text(option.label, fontSize = 10.sp, maxLines = 1)
+                    }
+                    if (index == 0) VerticalDivider(Modifier.height(48.dp), color = outline)
                 }
             }
         }
