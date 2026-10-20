@@ -4,6 +4,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -16,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.FileDownload
 import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -158,12 +162,19 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         Spacer(Modifier.height(30.dp))
         SectionLabel("Privacy")
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            PrivacyToggle("App Lock", checked = lock.enabled, enabled = !lock.busy,
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PrivacyToggle("App Lock", Icons.Outlined.Lock, if (lock.enabled) "Protected" else "Off",
+                checked = lock.enabled, enabled = !lock.busy,
                 accent = vm.accent.swatch, modifier = Modifier.weight(1f)) {
                 lock.clearMessage(); pinDialog = lock.enabled
             }
-            PrivacyToggle("Biometric", checked = lock.biometricEnabled,
+            PrivacyToggle("Biometric", Icons.Outlined.Fingerprint,
+                when {
+                    lock.biometricEnabled -> "On"
+                    !lock.enabled -> "PIN first"
+                    !lock.biometricAvailable -> "Unavailable"
+                    else -> "Off"
+                }, checked = lock.biometricEnabled,
                 enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled),
                 accent = vm.accent.swatch, modifier = Modifier.weight(1f)) { value ->
                 if (value) onEnableBiometric() else lock.disableBiometrics()
@@ -180,14 +191,30 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
 }
 
 @Composable
-private fun PrivacyToggle(title: String, checked: Boolean, enabled: Boolean, accent: Color,
+private fun PrivacyToggle(title: String, icon: ImageVector, state: String, checked: Boolean, enabled: Boolean, accent: Color,
     modifier: Modifier = Modifier, onChange: (Boolean) -> Unit) {
-    Row(modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
-        .heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, Modifier.weight(1f).padding(end = 6.dp), fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .5f))
-        Switch(checked = checked, onCheckedChange = null, enabled = enabled,
-            colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.White, checkedBorderColor = Color.Transparent))
+    val foreground = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .45f)
+    Surface(modifier.fillMaxHeight().clip(RoundedCornerShape(20.dp))
+        .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange),
+        shape = RoundedCornerShape(20.dp),
+        color = if (checked) accent.copy(alpha = .1f) else MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(1.dp, if (checked) accent.copy(alpha = .35f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .45f))) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(30.dp).background(accent.copy(alpha = if (enabled) .14f else .06f), CircleShape),
+                    contentAlignment = Alignment.Center) {
+                    Icon(icon, null, Modifier.size(19.dp), tint = if (enabled) accent else foreground)
+                }
+                Text(title, style = MaterialTheme.typography.labelLarge, color = foreground, modifier = Modifier.weight(1f))
+            }
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(state, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
+                    color = if (checked) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .6f))
+                Switch(checked = checked, onCheckedChange = null, enabled = enabled,
+                    colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.White,
+                        checkedBorderColor = Color.Transparent))
+            }
+        }
     }
 }
 
