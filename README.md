@@ -57,7 +57,9 @@ Collection names, descriptions, and icon choices travel with ZIP backups. Skip e
 
 ## Home
 
-Home previews keep the existing My Shelf grid and controls intact. Tap a preview to open details, or long-press for quick actions. View all in Continue opens My Shelf with In progress selected; View all in Recently added opens the full shelf sorted Recently added. These shortcuts clear previous searches and media filters so all matching titles are visible. Normal navigation preserves saved shelf and collection browsing context. Home's vertical and horizontal positions restore when returning from details or another tab.
+Home previews keep the existing My Shelf grid and controls intact. A static, theme-colored media doodle banner sits behind the centered welcome and subtitle. Home does not scroll vertically: cards adapt to the available height, with the two sections side by side in short landscape windows. Both rows scroll horizontally and remember their positions when returning from details or another tab. Space below the rows keeps the + button clear of the cards.
+
+Tap a preview to open details, or long-press for quick actions. View all in Continue opens My Shelf with In progress selected; View all in Recently added opens the full shelf sorted Recently added. These shortcuts clear previous searches and media filters so all matching titles are visible. Normal navigation preserves saved shelf and collection browsing context.
 
 Continue excludes caught-up, finished, paused, dropped, and planned titles; it uses season progress for tracked series. Empty rows show a short empty state and still end with View all. Creating a collection from Home opens the new collection so you can add its first title.
 
