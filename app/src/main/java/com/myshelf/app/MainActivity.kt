@@ -13,7 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -101,19 +100,22 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editing by vm::editing
+    var draftTypeSelected by rememberSaveable { mutableStateOf(false) }
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
     val visible = sortShelf(filterShelf(vm.items, type, genre, collection, query), itemOrder)
     when {
         editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
             onDelete = { vm.delete(it); editing = null },
-            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id } || type != null)
+            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id } || draftTypeSelected)
         else -> Scaffold(
             containerColor = Paper,
             floatingActionButton = {
                 if (tab != 2 && !vm.transferBusy) {
-                ExtendedFloatingActionButton(onClick = { editing = ShelfItem(type = type ?: MediaType.MOVIE, collection = collection.orEmpty()) }, containerColor = Green,
-                    contentColor = MaterialTheme.colorScheme.onPrimary, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Add to shelf") })
+                    AddShelfButton { selected ->
+                        draftTypeSelected = selected != null
+                        editing = ShelfItem(type = selected ?: MediaType.MOVIE, collection = collection.orEmpty())
+                    }
                 }
             },
             bottomBar = {
@@ -159,19 +161,11 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                 } else {
                     OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), placeholder = { Text("Search shelf") },
                         leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true, shape = RoundedCornerShape(18.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
-                        item { FilterChip(type == null, { typeName = null; genre = null }, label = { Text("All") }) }
-                        items(MediaType.entries) { media -> FilterChip(type == media, { typeName = media.name; genre = null }, label = { Text(media.label) }) }
-                    }
-                    if (type != null) {
-                        val genres = vm.items.filter { it.type == type }.map { it.genre }.filter { it.isNotBlank() }.distinct().sorted()
-                        if (genres.isNotEmpty()) LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            item { FilterChip(genre == null, { genre = null }, label = { Text("All genres") }) }
-                            items(genres) { g -> FilterChip(genre == g, { genre = g }, label = { Text(g) }) }
-                        }
-                    }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.weight(1f))
+                        ShelfFilters(type, genre,
+                            vm.items.filter { it.type == type }.map { it.genre }.filter { it.isNotBlank() }.distinct().sorted(),
+                            onType = { typeName = it?.name; genre = null }, onGenre = { genre = it })
                         key(collection) {
                             SortMenu(itemOrder, ItemSort.entries, { it.label }) { order ->
                                 val name = collection
