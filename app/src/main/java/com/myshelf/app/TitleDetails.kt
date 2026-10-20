@@ -2,6 +2,7 @@ package com.myshelf.app
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,57 +45,71 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
             IconButton(onRemove) { Icon(Icons.Outlined.DeleteOutline, "Remove title") }
         })
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Card(Modifier.align(Alignment.CenterHorizontally).width(170.dp).aspectRatio(.69f)) {
-                Cover(item, Modifier.fillMaxSize())
+        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+                Card(Modifier.width(108.dp).aspectRatio(.69f), shape = RoundedCornerShape(12.dp)) {
+                    Cover(item, Modifier.fillMaxSize())
+                }
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.titleLarge)
+                    val metadata = listOf(item.year, item.genre).filter { it.isNotBlank() }
+                    if (metadata.isNotEmpty()) Text(metadata.joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (item.creator.isNotBlank()) Text(item.creator, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick = { action = TitleAction.COLLECTION }, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                        Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(item.collection.ifBlank { "Add to collection" }, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
             }
-            Text(item.title, style = MaterialTheme.typography.headlineSmall)
-            val metadata = listOf(item.year, item.genre, item.creator).filter { it.isNotBlank() }
-            if (metadata.isNotEmpty()) Text(metadata.joinToString(" · "), color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AssistChip(onClick = { action = TitleAction.STATUS }, label = { Text(item.statusLabel) },
                     leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) })
                 AssistChip(onClick = { action = TitleAction.RATING }, label = { Text(if (item.rating == 0) "Rate" else "${item.rating} / 5") },
                     leadingIcon = { Icon(Icons.Outlined.StarBorder, null, Modifier.size(18.dp)) })
             }
-            TextButton(onClick = { action = TitleAction.COLLECTION }) {
-                Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(item.collection.ifBlank { "Add to collection" })
-            }
             if (item.type.supportsSeasons) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Seasons", Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+                    Column(Modifier.weight(1f)) {
+                        Text("Seasons", style = MaterialTheme.typography.titleMedium)
+                        item.seasonSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    }
                     TextButton(onClick = { seasonNumber = 0 }, enabled = item.seasons.size < 500) {
                         Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Text("Add season")
                     }
                 }
-                item.seasonSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                item.seasons.sortedBy { it.number }.forEach { season ->
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        Column(Modifier.weight(1f)) {
-                            Text(season.displayName, style = MaterialTheme.typography.titleSmall)
-                            Text(season.progress.label + if (season.rating > 0) " · ★ ${season.rating}" else "",
-                                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column {
+                    item.seasons.sortedBy { it.number }.forEach { season ->
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
+                        Column(Modifier.padding(vertical = 4.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(season.displayName, style = MaterialTheme.typography.titleSmall)
+                                    Text(season.progress.label + if (season.rating > 0) " · ★ ${season.rating}" else "",
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                IconButton(onClick = { seasonNumber = season.number }) { Icon(Icons.Outlined.Edit, "Edit ${season.displayName}") }
+                            }
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(enabled = season.watched > 0, onClick = { onSave(item.withSeason(season.withWatched(season.watched - 1))) }) {
+                                    Icon(Icons.Outlined.Remove, "One fewer episode watched in season ${season.number}")
+                                }
+                                Text(if (season.episodes > 0) "${season.watched} / ${season.episodes} ep" else "${season.watched} watched",
+                                    Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                                IconButton(enabled = season.watched < (season.episodes.takeIf { it > 0 } ?: 9999),
+                                    onClick = { onSave(item.withSeason(season.withWatched(season.watched + 1))) }) {
+                                    Icon(Icons.Outlined.Add, "One more episode watched in season ${season.number}")
+                                }
+                                if (season.progress != Progress.FINISHED) TextButton(onClick = {
+                                    onSave(item.withSeason(season.withProgress(Progress.FINISHED)))
+                                }) { Text("Finish") }
+                            }
                         }
-                        IconButton(onClick = { seasonNumber = season.number }) { Icon(Icons.Outlined.Edit, "Edit ${season.displayName}") }
                     }
-                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(enabled = season.watched > 0, onClick = { onSave(item.withSeason(season.withWatched(season.watched - 1))) }) {
-                            Icon(Icons.Outlined.Remove, "One fewer episode watched in season ${season.number}")
-                        }
-                        Text(if (season.episodes > 0) "${season.watched} / ${season.episodes} episodes" else "${season.watched} episodes watched",
-                            Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
-                        IconButton(enabled = season.watched < (season.episodes.takeIf { it > 0 } ?: 9999),
-                            onClick = { onSave(item.withSeason(season.withWatched(season.watched + 1))) }) {
-                            Icon(Icons.Outlined.Add, "One more episode watched in season ${season.number}")
-                        }
-                    }
-                    if (season.progress != Progress.FINISHED) TextButton(onClick = {
-                        onSave(item.withSeason(season.withProgress(Progress.FINISHED)))
-                    }) { Text("Mark season finished") }
                 }
                 if (item.seasons.isNotEmpty()) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Series has ended", Modifier.weight(1f))
@@ -101,10 +117,11 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
                 }
             }
             if (item.notes.isNotBlank()) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
                 Text("Notes", style = MaterialTheme.typography.titleMedium)
                 Text(item.notes)
             }
-            Spacer(Modifier.height(72.dp))
+            Spacer(Modifier.height(12.dp))
         }
     }
 }
