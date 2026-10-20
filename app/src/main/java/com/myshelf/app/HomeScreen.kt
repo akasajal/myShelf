@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -30,8 +31,14 @@ fun HomeScreen(items: List<ShelfItem>, loadError: String?, onOpen: (ShelfItem) -
     LazyColumn(modifier.fillMaxSize(), state = rememberLazyListState(), contentPadding = PaddingValues(top = 20.dp, bottom = 100.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         item(key = "welcome", contentType = "heading") {
-            Text(if (items.isEmpty()) "Welcome to My Shelf" else "Welcome back", Modifier.padding(horizontal = 22.dp, vertical = 4.dp),
-                style = MaterialTheme.typography.headlineSmall)
+            Column(Modifier.fillMaxWidth().heightIn(min = 160.dp).padding(horizontal = 22.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+                Text(if (items.isEmpty()) "Welcome to My Shelf" else "Welcome back", Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+                Text("Your stories, all in one place.", Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            }
         }
         if (loadError != null) item(key = "error") {
             Text(loadError, Modifier.padding(horizontal = 22.dp), color = MaterialTheme.colorScheme.error)
