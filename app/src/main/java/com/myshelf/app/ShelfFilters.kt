@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -26,7 +27,9 @@ import androidx.compose.ui.window.PopupProperties
 fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType: (MediaType?) -> Unit, onGenre: (String?) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val offset = with(LocalDensity.current) { 72.dp.roundToPx() }
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * .6f).dp
+    val configuration = LocalConfiguration.current
+    val maxHeight = (configuration.screenHeightDp * .6f).dp
+    val menuWidth = minOf(240.dp, (configuration.screenWidthDp - 32).coerceAtLeast(0).dp)
     Box {
         FloatingActionButton(onClick = { expanded = true }, modifier = Modifier.size(56.dp).semantics {
             contentDescription = "Filter: ${type?.label ?: "All media"}${genre?.let { ", $it" }.orEmpty()}"
@@ -36,7 +39,7 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
         }
         if (expanded) Popup(alignment = Alignment.BottomStart, offset = IntOffset(0, -offset),
             onDismissRequest = { expanded = false }, properties = PopupProperties(focusable = true)) {
-            Column(Modifier.heightIn(max = maxHeight).widthIn(max = 280.dp).verticalScroll(rememberScrollState()).padding(6.dp),
+            Column(Modifier.heightIn(max = maxHeight).width(menuWidth).verticalScroll(rememberScrollState()).padding(6.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 FilterOption("All media", Icons.Outlined.Apps, type == null) { onType(null); expanded = false }
                 MediaType.entries.forEach { media ->
@@ -51,7 +54,7 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
                     FilterOption(media.label, icon, type == media) { onType(media); expanded = false }
                 }
                 if (type != null && genres.isNotEmpty()) {
-                    Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
                         Text("Genre · ${type.label}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(12.dp))
                     }
                     FilterOption("All genres", Icons.Outlined.Category, genre == null) { onGenre(null); expanded = false }
@@ -66,14 +69,14 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
 
 @Composable
 private fun FilterOption(label: String, icon: ImageVector, active: Boolean, onClick: () -> Unit) {
-    Surface(onClick = onClick, modifier = Modifier.semantics { selected = active },
+    Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().semantics { selected = active },
         shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp,
         color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
         contentColor = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer) {
         Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(icon, null, Modifier.size(22.dp))
-            Text(label, Modifier.weight(1f, fill = false))
+            Text(label, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (active) Icon(Icons.Outlined.Check, null, Modifier.size(18.dp))
         }
     }
