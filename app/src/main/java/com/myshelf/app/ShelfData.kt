@@ -3,6 +3,7 @@ package com.myshelf.app
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,6 +47,8 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var accent by mutableStateOf(runCatching { Accent.valueOf(prefs.getString("accent", "ROSE")!!) }.getOrDefault(Accent.ROSE))
         private set
+    var cardsPerRow by mutableIntStateOf(prefs.getInt("cards_per_row", 2).coerceIn(2, 4))
+        private set
     var transferBusy by mutableStateOf(false)
         private set
     var transferMessage by mutableStateOf<String?>(null)
@@ -77,6 +80,11 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setTheme(mode: ThemeMode) { themeMode = mode; prefs.edit().putString("theme", mode.name).apply() }
     fun updateAccent(value: Accent) { accent = value; prefs.edit().putString("accent", value.name).apply() }
+    fun updateCardsPerRow(count: Int) {
+        require(count in 2..4)
+        cardsPerRow = count
+        prefs.edit().putInt("cards_per_row", count).apply()
+    }
     fun dismissImport() { if (!transferBusy) pendingImport = null }
 
     fun exportShelf(uri: Uri) {

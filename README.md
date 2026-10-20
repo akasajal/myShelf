@@ -12,6 +12,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Manual title entry and a cover sheet for device images, clipboard images, and direct image links.
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
 - A third Settings tab with saved System, Dark, and Light themes and six accent colors.
+- A saved Cards per row preference (2, 3, or 4) for the shelf and collection contents.
 - Portable ZIP import/export including available covers, with merge or replace on import.
 - Privacy controls for a four-digit PIN, optional biometric unlock, and background locking.
 

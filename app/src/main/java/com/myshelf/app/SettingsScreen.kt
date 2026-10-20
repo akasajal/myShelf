@@ -104,6 +104,26 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
             }
                 }
         }
+        Spacer(Modifier.height(24.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text("Cards per row", Modifier.weight(.36f), fontSize = 16.sp)
+            Row(Modifier.weight(.64f).selectableGroup().clip(RoundedCornerShape(28.dp))
+                .border(1.dp, outline, RoundedCornerShape(28.dp))) {
+                (2..4).forEach { count ->
+                    val selected = vm.cardsPerRow == count
+                    Row(Modifier.weight(1f)
+                        .background(if (selected) selectedBackground else controlBackground)
+                        .selectable(selected, onClick = { vm.updateCardsPerRow(count) }, role = Role.RadioButton)
+                        .semantics { contentDescription = "$count cards per row" }
+                        .heightIn(min = 48.dp),
+                        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+                        if (selected) Icon(Icons.Outlined.Check, null, Modifier.size(12.dp))
+                        Text(count.toString(), Modifier.padding(start = if (selected) 6.dp else 0.dp), fontSize = 13.sp)
+                    }
+                    if (count < 4) VerticalDivider(Modifier.height(48.dp), color = outline)
+                }
+            }
+        }
         Spacer(Modifier.height(46.dp))
         SectionLabel("Backups")
         Spacer(Modifier.height(24.dp))

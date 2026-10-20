@@ -169,9 +169,9 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.padding(vertical = 12.dp))
                     if (visible.isEmpty()) EmptyShelf(if (vm.items.isEmpty()) "No titles yet" else "No matches",
                         if (vm.items.isEmpty()) "Add a title to get started." else "Try another filter.", Modifier.weight(1f))
-                    else LazyVerticalGrid(GridCells.Adaptive(145.dp), horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    else LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
                         verticalArrangement = Arrangement.spacedBy(22.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                        items(visible, key = { it.id }) { item -> ShelfCard(item) { editing = item } }
+                        items(visible, key = { it.id }) { item -> ShelfCard(item, compact = vm.cardsPerRow > 2) { editing = item } }
                     }
                 }
             }
@@ -202,29 +202,36 @@ private fun CoverFallback(item: ShelfItem) {
         CoverDoodle()
         return
     }
-    Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF607564), Color(0xFF263F36))))
-        .padding(16.dp), contentAlignment = Alignment.Center) {
-        Text(item.title, fontFamily = FontFamily.Serif, color = Color(0xFFF4EEDC), fontSize = 24.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 5, overflow = TextOverflow.Ellipsis)
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF607564), Color(0xFF263F36)))),
+        contentAlignment = Alignment.Center) {
+        val small = maxWidth < 100.dp
+        val fontSize = when { small -> 14.sp; maxWidth < 140.dp -> 18.sp; else -> 24.sp }
+        Text(item.title, Modifier.padding(if (small) 8.dp else 16.dp), fontFamily = FontFamily.Serif,
+            color = Color(0xFFF4EEDC), fontSize = fontSize, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            maxLines = 5, overflow = TextOverflow.Ellipsis)
     }
 }
 
 @Composable
-private fun ShelfCard(item: ShelfItem, onClick: () -> Unit) {
+private fun ShelfCard(item: ShelfItem, compact: Boolean, onClick: () -> Unit) {
     Column(Modifier.clickable(onClick = onClick)) {
         Card(shape = RoundedCornerShape(12.dp)) {
             Box {
                 Cover(item, Modifier.fillMaxWidth().aspectRatio(.69f))
                 Surface(Modifier.align(Alignment.TopStart).padding(8.dp), shape = RoundedCornerShape(6.dp), color = Paper.copy(alpha = .94f)) {
-                    Text(item.type.singular.uppercase(), Modifier.padding(horizontal = 7.dp, vertical = 4.dp), fontSize = 9.sp, letterSpacing = .8.sp)
+                    Text(item.type.singular.uppercase(), Modifier.padding(horizontal = if (compact) 5.dp else 7.dp, vertical = 4.dp),
+                        fontSize = if (compact) 8.sp else 9.sp, letterSpacing = .8.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
-        Text(item.title, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 9.dp))
-        Text(listOf(item.genre, item.year).filter { it.isNotBlank() }.joinToString(" · "), fontSize = 12.sp, color = Ink.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(item.title, fontSize = if (compact) 13.sp else 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 2,
+            overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 9.dp))
+        Text(listOf(item.genre, item.year).filter { it.isNotBlank() }.joinToString(" · "), fontSize = if (compact) 10.sp else 12.sp,
+            color = Ink.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(item.progress.label, fontSize = 10.sp, color = Green, modifier = Modifier.weight(1f))
-            if (item.rating > 0) Text("★ ${item.rating}", color = MaterialTheme.colorScheme.primary, fontSize = 12.sp)
+            Text(item.progress.label, fontSize = if (compact) 9.sp else 10.sp, color = Green, modifier = Modifier.weight(1f),
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (item.rating > 0) Text("★ ${item.rating}", color = MaterialTheme.colorScheme.primary, fontSize = if (compact) 10.sp else 12.sp)
         }
     }
 }
