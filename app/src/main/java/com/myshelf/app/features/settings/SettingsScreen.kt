@@ -190,8 +190,8 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         Spacer(Modifier.height(32.dp))
         SectionLabel("About")
         Spacer(Modifier.height(22.dp))
-        Text("My Shelf", fontSize = 16.sp)
-        Text("v${BuildConfig.VERSION_NAME} · Your personal media library.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text("My Shelf · v${BuildConfig.VERSION_NAME}", fontSize = 16.sp)
+        Text("Your stories, all in one place.", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(24.dp))
     }
 }

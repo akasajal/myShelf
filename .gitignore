@@ -4,3 +4,22 @@ local.properties
 **/build/
 .idea/
 *.iml
+
+# Packaged builds and local signing material
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
+
+# Personal library exports and their local tooling
+/exports/
+/scripts/create_mcu_pack.py
+/app/src/test/java/com/myshelf/app/McuImportPackTest.kt
+__pycache__/
+*.py[cod]
+
+# Local device captures and OS files
+/captures/
+.DS_Store
+Thumbs.db
