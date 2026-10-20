@@ -4,17 +4,13 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.myshelf.app.R
 import com.myshelf.app.core.model.CollectionProfile
 import com.myshelf.app.core.model.ItemSort
 import com.myshelf.app.core.model.MediaType
@@ -155,15 +151,8 @@ fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiometric: (
                     }
                 },
                 bottomBar = {
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                        NavigationBarItem(selected = tab == MainTab.HOME, enabled = !vm.transferBusy, onClick = { tab = MainTab.HOME; collection = null },
-                            icon = { Icon(Icons.Outlined.Home, null) }, label = { Text("Home") })
-                        NavigationBarItem(selected = tab == MainTab.SHELF, enabled = !vm.transferBusy, onClick = { tab = MainTab.SHELF; collection = null },
-                            icon = { Icon(painterResource(R.drawable.ic_shelves), null) }, label = { Text("My shelf") })
-                        NavigationBarItem(selected = tab == MainTab.COLLECTIONS, enabled = !vm.transferBusy, onClick = { tab = MainTab.COLLECTIONS; collection = null },
-                            icon = { Icon(Icons.Outlined.CollectionsBookmark, null) }, label = { Text("Collections") })
-                        NavigationBarItem(selected = tab == MainTab.SETTINGS, enabled = !vm.transferBusy, onClick = { tab = MainTab.SETTINGS },
-                            icon = { Icon(Icons.Outlined.Settings, null) }, label = { Text("Settings") })
+                    ShelfNavigationBar(selected = tab, enabled = !vm.transferBusy) {
+                        tab = it; collection = null
                     }
                 }
             ) { padding ->
