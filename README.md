@@ -9,6 +9,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Genre labels on titles, scoped to their media type.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
+- One card per series or TV show, with individual season status, ratings, and episode counts inside.
 - Manual title entry and a cover sheet for device images, clipboard images, and direct image links.
 - A compact squircle + button for the add form, paired with a left-side Filter button that opens one compact sheet with seven media rows. Sort stays in the top toolbar.
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
@@ -42,6 +43,12 @@ Tap the cover or doodle to open a bottom sheet: Choose image, Paste image, Paste
 
 All new covers are validated, resized to at most 1,600 pixels on the longest edge, and saved as app-private JPEGs. Downloads are limited to 8 MB with timeouts and HTTPS-only redirects. An unsuccessful or cancelled import preserves the current cover. Once saved, gallery, pasted, and downloaded covers work offline and are included in backups. Existing cover document links from older versions remain supported.
 
+## Seasons
+
+Open a series or TV show and tap Add season. Each season has a unique number, status, rating, watched episode count, and optional total. Tap a season to edit or remove it; save the title to keep your changes. Marking a season Finished fills its known episode total. Adding seasons to existing titles is optional and leaves other titles unchanged.
+
+With seasons, the card shows a completion count and derives its status from them. Completing all tracked seasons shows Caught up; enable Series has ended to show Finished instead. Add newly released seasons manually. Season details stay on-device and travel with ZIP backups; older backups without seasons still import.
+
 ## App lock
 
 Enable App Lock in Settings, enter four digits, then enter them again to confirm. Disabling the lock requires that PIN. Biometrics can be enabled after PIN setup and a successful Android biometric prompt; unsupported or unenrolled devices keep PIN unlock available.
@@ -56,4 +63,4 @@ The app stores a salted HMAC verifier using a device-bound Android Keystore key,
 
 `ShelfData.kt` owns the model, filtering, and on-device persistence. `ShelfJson.kt` handles metadata serialization and validation; `ShelfBackup.kt` handles portable backups. `MainActivity.kt` contains the shelf and collection views, `EditorScreens.kt` contains editing, and `SettingsScreen.kt` / `ShelfTheme.kt` provide appearance and data controls.
 
-The shelf starts empty. One genre and one collection are supported per title. There is no cloud sync or episode/chapter tracking yet. Library data and new covers are stored privately on the device, and uninstalling the app removes them. Older cover document links may become unavailable if their source document is deleted. Missing covers use a doodle or typographic fallback.
+The shelf starts empty. One genre and one collection are supported per title. There is no cloud sync, automatic season catalog, individual episode metadata, or chapter tracking. Library data and new covers are stored privately on the device, and uninstalling the app removes them. Older cover document links may become unavailable if their source document is deleted. Missing covers use a doodle or typographic fallback.

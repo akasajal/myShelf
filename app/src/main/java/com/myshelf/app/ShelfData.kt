@@ -29,7 +29,8 @@ data class ShelfItem(
     val title: String = "", val type: MediaType = MediaType.MOVIE,
     val genre: String = "", val collection: String = "", val cover: String = "",
     val year: String = "", val creator: String = "", val rating: Int = 0,
-    val progress: Progress = Progress.PLANNED, val notes: String = ""
+    val progress: Progress = Progress.PLANNED, val notes: String = "",
+    val seasons: List<Season> = emptyList(), val seriesEnded: Boolean = false
 )
 
 fun filterShelf(items: List<ShelfItem>, type: MediaType?, genre: String?, collection: String?, query: String): List<ShelfItem> =

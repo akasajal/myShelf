@@ -244,9 +244,12 @@ private fun ShelfCard(item: ShelfItem, compact: Boolean, onClick: () -> Unit) {
         Text(listOf(item.genre, item.year).filter { it.isNotBlank() }.joinToString(" · "), fontSize = if (compact) 10.sp else 12.sp,
             color = Ink.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         Row(Modifier.fillMaxWidth().padding(top = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(item.progress.label, fontSize = if (compact) 9.sp else 10.sp, color = Green, modifier = Modifier.weight(1f),
+            Text(item.statusLabel, fontSize = if (compact) 9.sp else 10.sp, color = Green, modifier = Modifier.weight(1f),
                 maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (item.rating > 0) Text("★ ${item.rating}", color = MaterialTheme.colorScheme.primary, fontSize = if (compact) 10.sp else 12.sp)
+        }
+        item.seasonSummary?.let {
+            Text(it, fontSize = if (compact) 9.sp else 10.sp, color = Ink.copy(alpha = .6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

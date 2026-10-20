@@ -39,13 +39,16 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     var rating by rememberSaveable(initial.id) { mutableIntStateOf(initial.rating) }
     var progress by rememberSaveable(initial.id) { mutableStateOf(initial.progress) }
     var notes by rememberSaveable(initial.id) { mutableStateOf(initial.notes) }
+    var seasons by rememberSaveable(initial.id, stateSaver = SeasonListSaver) { mutableStateOf(initial.seasons) }
+    var seriesEnded by rememberSaveable(initial.id) { mutableStateOf(initial.seriesEnded) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
     var showCoverSheet by rememberSaveable(initial.id) { mutableStateOf(false) }
     val coverImporter: CoverPickerViewModel = viewModel()
     val coverBusy = coverImporter.busyFor == initial.id
     val current = initial.copy(title = title.trim(), type = type, genre = genre.trim(), collection = collection.trim(),
-        cover = cover.trim(), creator = creator.trim(), year = year.trim(), rating = rating, progress = progress, notes = notes.trim())
+        cover = cover.trim(), creator = creator.trim(), year = year.trim(), rating = rating, progress = progress, notes = notes.trim(),
+        seasons = seasons, seriesEnded = seriesEnded)
     val exit = { coverImporter.cancel(initial.id); onBack() }
     val leave = { if (current != initial) confirmDiscard = true else exit() }
     BackHandler(onBack = leave)
@@ -75,7 +78,7 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     Scaffold(topBar = {
         TopAppBar(title = { Text("Title details", fontFamily = FontFamily.Serif) }, navigationIcon = {
             IconButton(leave) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
-        }, actions = { TextButton({ onSave(current) }, enabled = title.isNotBlank() && mediaTypeSelected && !coverBusy) { Text("Save") } })
+        }, actions = { TextButton({ onSave(current.copy(progress = current.seasonProgress())) }, enabled = title.isNotBlank() && mediaTypeSelected && !coverBusy) { Text("Save") } })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Box(Modifier.align(Alignment.CenterHorizontally)) {
@@ -123,9 +126,19 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
                 EditorField("Year", year, { year = it }, Modifier.weight(1f))
                 EditorField("Creator / author", creator, { creator = it }, Modifier.weight(2f))
             }
-            Text("Status", fontFamily = FontFamily.Serif, fontSize = 21.sp)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Progress.entries.forEach { state -> FilterChip(progress == state, { progress = state }, label = { Text(state.label) }) }
+            if (mediaTypeSelected && type.supportsSeasons) {
+                SeasonSection(seasons, seriesEnded, onChange = { seasons = it }, onEnded = { seriesEnded = it })
+            }
+            if (type.supportsSeasons && seasons.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text("Status", Modifier.weight(1f))
+                    Text(current.statusLabel, color = MaterialTheme.colorScheme.primary)
+                }
+            } else {
+                Text("Status", fontFamily = FontFamily.Serif, fontSize = 21.sp)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Progress.entries.forEach { state -> FilterChip(progress == state, { progress = state }, label = { Text(state.label) }) }
+                }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("My rating", Modifier.weight(1f))
