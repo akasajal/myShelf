@@ -18,11 +18,13 @@ import com.myshelf.app.features.security.UnlockScreen
 import com.myshelf.app.navigation.ShelfApp
 import com.myshelf.app.state.ShelfViewModel
 import com.myshelf.app.ui.theme.ShelfTheme
+import com.myshelf.app.ui.startup.installShelfSplashScreen
 
 class MainActivity : FragmentActivity() {
     private val appLock: AppLockViewModel by viewModels()
     private lateinit var biometricPrompt: BiometricPrompt
     override fun onCreate(savedInstanceState: Bundle?) {
+        installShelfSplashScreen()
         super.onCreate(savedInstanceState)
         biometricPrompt = BiometricPrompt(this, ContextCompat.getMainExecutor(this), object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) { appLock.finishBiometric(true) }

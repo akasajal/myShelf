@@ -1,8 +1,23 @@
 <resources>
     <style name="Theme.MyShelf" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
         <item name="android:colorAccent">#426652</item>
-        <item name="android:windowBackground">#F7F5EF</item>
+        <item name="android:windowBackground">@color/splash_background</item>
+    </style>
+    <style name="Theme.MyShelf.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyShelf</item>
+        <item name="android:windowLightStatusBar">@bool/light_system_bars</item>
+    </style>
+    <!-- Respect an explicit in-app theme once the Activity starts. -->
+    <style name="Theme.MyShelf.Starting.Light">
+        <item name="windowSplashScreenBackground">#F7F5EF</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+    <style name="Theme.MyShelf.Starting.Dark">
+        <item name="windowSplashScreenBackground">#181B1B</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>

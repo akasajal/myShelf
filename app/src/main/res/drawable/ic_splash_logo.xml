@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the square artwork inside the platform splash icon's circular safe area. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="28%">
+    <bitmap android:src="@drawable/ic_shelf_glass" android:gravity="fill" android:filter="true" />
+</inset>

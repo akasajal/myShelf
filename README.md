@@ -6,6 +6,7 @@ No accounts, API keys, analytics, or automatic catalog requests. Internet access
 
 ## Features
 
+- **Startup:** a native logo splash with light/dark backgrounds and a short fade into Home or PIN unlock, without an artificial loading delay.
 - **Home:** a doodle welcome banner, horizontal Continue and Recently added rows, and View all shortcuts. The + menu springs open to the left for Card or Collection creation. Home stays fixed vertically and adapts to short landscape windows.
 - **My Shelf:** cover cards, search, media and status filters, sorting, and saved browsing positions. Choose 2, 3, or 4 cards per row and Comfortable or Compact details.
 - **Collections:** names, descriptions, and 16 preset icons. Collections can span media types; titles keep their own genre labels. Create empty collections or group existing titles.
