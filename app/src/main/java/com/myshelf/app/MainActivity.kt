@@ -100,21 +100,28 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editing by vm::editing
-    var draftTypeSelected by rememberSaveable { mutableStateOf(false) }
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
     val visible = sortShelf(filterShelf(vm.items, type, genre, collection, query), itemOrder)
     when {
         editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
             onDelete = { vm.delete(it); editing = null },
-            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id } || draftTypeSelected)
+            initialMediaTypeSelected = vm.items.any { it.id == editing!!.id })
         else -> Scaffold(
             containerColor = Paper,
+            floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
                 if (tab != 2 && !vm.transferBusy) {
-                    AddShelfButton { selected ->
-                        draftTypeSelected = selected != null
-                        editing = ShelfItem(type = selected ?: MediaType.MOVIE, collection = collection.orEmpty())
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically) {
+                        if (tab == 0 || collection != null) {
+                            ShelfFilters(type, genre,
+                                vm.items.filter { it.type == type }.map { it.genre }.filter { it.isNotBlank() }.distinct().sorted(),
+                                onType = { typeName = it?.name; genre = null }, onGenre = { genre = it })
+                        } else Spacer(Modifier.weight(1f))
+                        AddShelfButton {
+                            editing = ShelfItem(collection = collection.orEmpty())
+                        }
                     }
                 }
             },
@@ -163,9 +170,6 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         leadingIcon = { Icon(Icons.Outlined.Search, null) }, singleLine = true, shape = RoundedCornerShape(18.dp))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.weight(1f))
-                        ShelfFilters(type, genre,
-                            vm.items.filter { it.type == type }.map { it.genre }.filter { it.isNotBlank() }.distinct().sorted(),
-                            onType = { typeName = it?.name; genre = null }, onGenre = { genre = it })
                         key(collection) {
                             SortMenu(itemOrder, ItemSort.entries, { it.label }) { order ->
                                 val name = collection
