@@ -4,8 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.*
@@ -27,6 +28,8 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
     onSave: (ShelfItem) -> Unit, onRemove: () -> Unit) {
     var action by rememberSaveable(item.id) { mutableStateOf<TitleAction?>(null) }
     var seasonNumber by rememberSaveable(item.id) { mutableStateOf<Int?>(null) }
+    val listState = rememberLazyListState()
+    val seasons = remember(item.seasons) { item.seasons.sortedBy { it.number } }
     BackHandler(onBack = onBack)
     action?.let { selected -> key(item.id, selected) {
         TitleActionDialog(item, selected, collections, onSave) { action = null }
@@ -50,51 +53,57 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
             IconButton(onRemove) { Icon(Icons.Outlined.DeleteOutline, "Remove title", tint = MaterialTheme.colorScheme.error) }
         })
     }) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
-                BoxWithConstraints(Modifier.fillMaxWidth()) {
-                    val artworkHeight = (maxWidth / .85f).coerceIn(260.dp, 420.dp)
-                    Box(Modifier.fillMaxWidth().height(artworkHeight)
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
-                        Cover(item, Modifier.fillMaxSize().blur(24.dp).alpha(.4f).clearAndSetSemantics {}, placeholder = {})
-                        Cover(item, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+        LazyColumn(Modifier.fillMaxSize().padding(padding), state = listState,
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item(key = "artwork", contentType = "artwork") {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                    BoxWithConstraints(Modifier.fillMaxWidth()) {
+                        val artworkHeight = (maxWidth / .85f).coerceIn(260.dp, 420.dp)
+                        Box(Modifier.fillMaxWidth().height(artworkHeight)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                            Cover(item, Modifier.fillMaxSize().blur(24.dp).alpha(.4f).clearAndSetSemantics {}, backdrop = true, placeholder = {})
+                            Cover(item, Modifier.fillMaxSize(), contentScale = ContentScale.Fit, highQuality = true)
+                        }
                     }
                 }
             }
-            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(item.title, style = MaterialTheme.typography.headlineSmall)
-                    val metadata = listOf(item.year, item.genre).filter { it.isNotBlank() }
-                    if (metadata.isNotEmpty()) Text(metadata.joinToString(" · "),
-                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (item.creator.isNotBlank()) Text(item.creator, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        AssistChip(onClick = { action = TitleAction.STATUS }, label = { Text(item.statusLabel) },
-                            leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) })
-                        AssistChip(onClick = { action = TitleAction.RATING }, label = { Text(if (item.rating == 0) "Rate" else "${item.rating} / 5") },
-                            leadingIcon = { Icon(Icons.Outlined.StarBorder, null, Modifier.size(18.dp)) })
-                        AssistChip(onClick = { action = TitleAction.COLLECTION }, label = {
-                            Text(item.collection.ifBlank { "Add to collection" }, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }, leadingIcon = { Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(18.dp)) })
+            item(key = "information", contentType = "information") {
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(item.title, style = MaterialTheme.typography.headlineSmall)
+                        val metadata = listOf(item.year, item.genre).filter { it.isNotBlank() }
+                        if (metadata.isNotEmpty()) Text(metadata.joinToString(" · "),
+                            style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (item.creator.isNotBlank()) Text(item.creator, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            AssistChip(onClick = { action = TitleAction.STATUS }, label = { Text(item.statusLabel) },
+                                leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) })
+                            AssistChip(onClick = { action = TitleAction.RATING }, label = { Text(if (item.rating == 0) "Rate" else "${item.rating} / 5") },
+                                leadingIcon = { Icon(Icons.Outlined.StarBorder, null, Modifier.size(18.dp)) })
+                            AssistChip(onClick = { action = TitleAction.COLLECTION }, label = {
+                                Text(item.collection.ifBlank { "Add to collection" }, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }, leadingIcon = { Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(18.dp)) })
+                        }
                     }
                 }
             }
             if (item.type.supportsSeasons) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Seasons", style = MaterialTheme.typography.titleMedium)
-                        item.seasonSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    }
-                    TextButton(onClick = { seasonNumber = 0 }, enabled = item.seasons.size < 500) {
-                        Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Text("Add season")
+                item(key = "season-heading", contentType = "heading") {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Seasons", style = MaterialTheme.typography.titleMedium)
+                            item.seasonSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        }
+                        TextButton(onClick = { seasonNumber = 0 }, enabled = item.seasons.size < 500) {
+                            Icon(Icons.Outlined.Add, null, Modifier.size(18.dp)); Text("Add season")
+                        }
                     }
                 }
-                Column {
-                    item.seasons.sortedBy { it.number }.forEach { season ->
+                items(seasons, key = { "season:${it.number}" }, contentType = { "season" }) { season ->
+                    Column {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
                         Column(Modifier.padding(vertical = 4.dp)) {
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -122,17 +131,20 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
                         }
                     }
                 }
-                if (item.seasons.isNotEmpty()) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text("Series has ended", Modifier.weight(1f))
-                    Switch(checked = item.seriesEnded, onCheckedChange = { onSave(item.copy(seriesEnded = it)) })
+                if (item.seasons.isNotEmpty()) item(key = "series-ended", contentType = "switch") {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Series has ended", Modifier.weight(1f))
+                        Switch(checked = item.seriesEnded, onCheckedChange = { onSave(item.copy(seriesEnded = it)) })
+                    }
                 }
             }
-            if (item.notes.isNotBlank()) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
-                Text("Notes", style = MaterialTheme.typography.titleMedium)
-                Text(item.notes)
+            if (item.notes.isNotBlank()) item(key = "notes", contentType = "notes") {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
+                    Text("Notes", style = MaterialTheme.typography.titleMedium)
+                    Text(item.notes)
+                }
             }
-            Spacer(Modifier.height(12.dp))
         }
     }
 }

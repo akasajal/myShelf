@@ -43,7 +43,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.SubcomposeAsyncImage
+import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Precision
 import kotlinx.coroutines.launch
@@ -120,9 +121,10 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     val detailsState = rememberSaveableStateHolder()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val collections = vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct()
-    val selected = vm.items.find { it.id == selectedId }
-    val quickItem = vm.items.find { it.id == quickId }
+    val shelfItems = vm.items
+    val collections = remember(shelfItems) { shelfItems.map { it.collection }.filter { it.isNotBlank() }.distinct() }
+    val selected = remember(shelfItems, selectedId) { shelfItems.find { it.id == selectedId } }
+    val quickItem = remember(shelfItems, quickId) { shelfItems.find { it.id == quickId } }
     val removeTitle: (String) -> Unit = remove@{ id ->
         val removed = vm.delete(id) ?: return@remove
         if (selectedId == id) selectedId = null
@@ -145,7 +147,9 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
         }
     }
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
-    val visible = sortShelf(filterShelf(vm.items, type, null, collection, query, status), itemOrder)
+    val visible = remember(shelfItems, type, collection, query, status, itemOrder) {
+        sortShelf(filterShelf(shelfItems, type, null, collection, query, status), itemOrder)
+    }
     Box(Modifier.fillMaxSize()) {
     when {
         editing != null -> EditorRoute(editing!!, vm.items,
@@ -192,7 +196,9 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     color = Ink, modifier = Modifier.padding(bottom = 20.dp))
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (tab == 1 && collection == null) {
-                    val groups = sortCollections(filterShelf(vm.items, null, null, null, "", status), vm.collectionsSort)
+                    val groups = remember(shelfItems, status, vm.collectionsSort) {
+                        sortCollections(filterShelf(shelfItems, null, null, null, "", status), vm.collectionsSort)
+                    }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${groups.size} collections", Modifier.weight(1f), fontSize = 12.sp, color = Green)
                         StatusFilterMenu(status) { contexts = contexts + (browseKey to context.copy(status = it?.name)) }
@@ -201,7 +207,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     if (groups.isEmpty()) EmptyShelf(if (status == null) "No collections yet" else "No matches",
                         if (status == null) "Assign a collection when adding a title." else "Try another status filter.", Modifier.weight(1f))
                     else LazyColumn(state = collectionsListState, verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                        items(groups, key = { it.key }) { group ->
+                        items(groups, key = { it.key }, contentType = { "collection" }) { group ->
                             Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Outlined.CollectionsBookmark, null, tint = Green)
@@ -234,7 +240,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), state = gridState,
                             horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
                             verticalArrangement = Arrangement.spacedBy(22.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                            items(visible, key = { it.id }) { item ->
+                            items(visible, key = { it.id }, contentType = { "title" }) { item ->
                                 ShelfCard(item, compact = vm.cardsPerRow > 2, details = vm.cardDetails,
                                     onClick = { selectedId = item.id }, onLongClick = { quickId = item.id; quickAction = null })
                             }
@@ -261,14 +267,23 @@ private fun EmptyShelf(title: String, message: String, modifier: Modifier = Modi
 
 @Composable
 fun Cover(item: ShelfItem, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop,
+    highQuality: Boolean = false, backdrop: Boolean = false,
     placeholder: @Composable () -> Unit = { CoverFallback(item) }) {
     val context = LocalContext.current
-    val request = remember(context, item.cover) {
-        ImageRequest.Builder(context).data(item.cover.ifBlank { null }).precision(Precision.EXACT).build()
+    val request = remember(context, item.cover, highQuality, backdrop) {
+        val variant = if (backdrop) "backdrop" else if (highQuality) "detail" else "thumbnail"
+        ImageRequest.Builder(context).data(item.cover.ifBlank { null })
+            .memoryCacheKey("${item.cover}:$variant")
+            .precision(if (highQuality) Precision.EXACT else Precision.INEXACT)
+            .apply { if (backdrop) size(128) }.build()
     }
-    SubcomposeAsyncImage(model = request, contentDescription = "Cover for ${item.title}",
-        contentScale = contentScale, filterQuality = FilterQuality.High, modifier = modifier,
-        loading = { placeholder() }, error = { placeholder() })
+    var loaded by remember(request) { mutableStateOf(false) }
+    Box(modifier) {
+        if (!loaded) placeholder()
+        AsyncImage(model = request, contentDescription = "Cover for ${item.title}",
+            contentScale = contentScale, filterQuality = if (highQuality) FilterQuality.High else FilterQuality.Low,
+            modifier = Modifier.matchParentSize(), onState = { loaded = it is AsyncImagePainter.State.Success })
+    }
 }
 
 @Composable
