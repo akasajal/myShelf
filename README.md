@@ -83,8 +83,8 @@ The app stores a salted HMAC verifier using a device-bound Android Keystore key,
 
 ## Structure and limits
 
-`ShelfData.kt` owns the model, filtering, and on-device persistence. `ShelfJson.kt` handles metadata serialization and validation; `ShelfBackup.kt` handles portable backups. `MainActivity.kt` contains the shelf and collection views, `EditorScreens.kt` contains editing, and `SettingsScreen.kt` / `ShelfTheme.kt` provide appearance and data controls.
+Sources are grouped by responsibility: `core/model` for shared models, `domain` for pure rules, `data` for storage and backups, `features` for screens and feature ViewModels, `navigation` for routing, `state` for shared shelf state, and `ui` for reusable components and theme. Unit tests mirror the domain/data hierarchy. See [the architecture guide](docs/architecture.md) for the full tree and dependency direction.
 
-`TitleDetails.kt` and `TitleActions.kt` provide details and quick actions. `ShelfChanges.kt` owns import decisions, duplicate matching, and deletion restoration. `BrowsingContext.kt` saves per-screen searches and filters; scroll positions use Compose's saveable list/grid states.
+`MainActivity.kt` hosts Compose, lifecycle, and biometrics. Shelf and collection rendering live in their own feature screens; `navigation/ShelfApp.kt` connects screens and preserves browsing state. Serialization and image storage are separated from UI and model code.
 
 The shelf starts empty. One genre and one collection are supported per title. There is no cloud sync, automatic season catalog, individual episode metadata, or chapter tracking. Library data and new covers are stored privately on the device, and uninstalling the app removes them. Older cover document links may become unavailable if their source document is deleted. Missing covers use a doodle or typographic fallback.
