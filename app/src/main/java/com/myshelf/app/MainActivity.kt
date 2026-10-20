@@ -116,6 +116,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var quickId by rememberSaveable { mutableStateOf<String?>(null) }
     var quickAction by rememberSaveable { mutableStateOf<TitleAction?>(null) }
     var editingCollection by rememberSaveable { mutableStateOf<String?>(null) }
+    var creatingCollectionId by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by vm::editing
     val collectionsListState = rememberLazyListState()
     val gridStates = rememberSaveableStateHolder()
@@ -129,6 +130,13 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     }
     val selected = remember(shelfItems, selectedId) { shelfItems.find { it.id == selectedId } }
     val quickItem = remember(shelfItems, quickId) { shelfItems.find { it.id == quickId } }
+    creatingCollectionId?.let { id -> key(id) {
+        CollectionEditor(CollectionProfile(name = "", id = id), collections, onSave = { profile ->
+            val error = vm.addCollection(profile)
+            if (error == null) creatingCollectionId = null
+            error
+        }, onDismiss = { creatingCollectionId = null }, isNew = true)
+    } }
     editingCollection?.let { original -> key(original) {
         CollectionEditor(vm.collectionProfile(original), collections, onSave = { updated ->
             val error = vm.updateCollection(original, updated)
@@ -184,8 +192,9 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         if (tab == 0 || collection != null) {
                             ShelfFilters(type, onType = { contexts = contexts + (browseKey to context.copy(media = it?.name)) })
                         } else Spacer(Modifier.weight(1f))
-                        AddShelfButton {
-                            editing = ShelfItem(collection = collection.orEmpty())
+                        AddShelfButton(label = if (tab == 1 && collection == null) "New collection" else "Add to shelf") {
+                            if (tab == 1 && collection == null) creatingCollectionId = java.util.UUID.randomUUID().toString()
+                            else editing = ShelfItem(collection = collection.orEmpty())
                         }
                     }
                 }
@@ -232,7 +241,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         Text("${groups.size} collections", Modifier.weight(1f), fontSize = 12.sp, color = Green)
                         SortMenu(vm.collectionsSort, CollectionSort.entries, { it.label }, vm::updateCollectionsSort)
                     }
-                    if (groups.isEmpty()) EmptyShelf("No collections yet", "Assign a collection when adding a title.", Modifier.weight(1f))
+                    if (groups.isEmpty()) EmptyShelf("No collections yet", "Tap + to create a collection.", Modifier.weight(1f))
                     else LazyColumn(state = collectionsListState, verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
                         items(groups, key = { it.key }, contentType = { "collection" }) { group ->
                             Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {

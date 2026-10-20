@@ -41,6 +41,17 @@ object CollectionJson {
 
 data class CollectionChange(val items: List<ShelfItem>, val profiles: List<CollectionProfile>)
 
+fun createCollection(items: List<ShelfItem>, profiles: List<CollectionProfile>, profile: CollectionProfile): List<CollectionProfile> {
+    val clean = profile.copy(name = profile.name.trim(), description = profile.description.trim())
+    val key = collectionKey(clean.name)
+    require(items.none { collectionKey(it.collection) == key } && profiles.none { collectionKey(it.name) == key }) {
+        "A collection with this name already exists."
+    }
+    val next = profiles + clean
+    CollectionJson.decode(CollectionJson.encode(next))
+    return next
+}
+
 fun customizeCollection(items: List<ShelfItem>, profiles: List<CollectionProfile>, original: String,
     updated: CollectionProfile): CollectionChange {
     val oldKey = collectionKey(original)

@@ -50,7 +50,7 @@ All new covers are validated, resized to at most 1,600 pixels on the longest edg
 
 ## Collections
 
-Tap the pencil on a collection card or inside a collection to customize its icon, name, and description. Choose from 16 local Material icons. Renaming updates every title in that collection and keeps its identity, saved browsing context, and sort preference. Names must be unique ignoring case and surrounding spaces. Customizations remain saved even when the collection has no titles.
+Tap + on the Collections list to create a collection with a name, description, and preset icon. Inside a collection, + adds a title to it. Tap the pencil on a collection card or inside a collection to customize it. Choose from 16 local Material icons. Renaming updates every title in that collection and keeps its identity, saved browsing context, and sort preference. Names must be unique ignoring case and surrounding spaces. Customizations remain saved even when the collection has no titles.
 
 Collection names, descriptions, and icon choices travel with ZIP backups. Skip existing keeps matching collection customizations; Update matching applies incoming customizations and follows collection IDs through renames; Replace shelf uses only the backup's collections. Conflicting renames are rejected without applying the import. Older backups without collection details remain supported.
 

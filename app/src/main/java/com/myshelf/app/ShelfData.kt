@@ -86,6 +86,16 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         emptyList()
     }
 
+    fun addCollection(profile: CollectionProfile): String? {
+        if (loadError != null || transferBusy) return "Your shelf is busy. Try again."
+        return try {
+            val next = createCollection(items, collectionProfiles, profile)
+            prefs.edit().putString("collections", CollectionJson.encode(next).toString()).apply()
+            collectionProfiles = next
+            null
+        } catch (e: IllegalArgumentException) { e.message ?: "Couldn't create this collection." }
+    }
+
     fun updateCollection(original: String, updated: CollectionProfile): String? {
         if (loadError != null || transferBusy) return "Your shelf is busy. Try again."
         return try {

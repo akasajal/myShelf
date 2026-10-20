@@ -12,9 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AddShelfButton(onAdd: () -> Unit) {
+fun AddShelfButton(label: String = "Add to shelf", onAdd: () -> Unit) {
     FloatingActionButton(onClick = onAdd, modifier = Modifier.size(56.dp), shape = RoundedCornerShape(18.dp),
         containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary) {
-        Icon(Icons.Outlined.Add, "Add to shelf", Modifier.size(28.dp))
+        Icon(Icons.Outlined.Add, label, Modifier.size(28.dp))
     }
 }

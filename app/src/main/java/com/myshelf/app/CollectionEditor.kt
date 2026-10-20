@@ -46,7 +46,8 @@ val CollectionIcon.vector: ImageVector get() = when (this) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CollectionEditor(initial: CollectionProfile, names: List<String>, onSave: (CollectionProfile) -> String?, onDismiss: () -> Unit) {
+fun CollectionEditor(initial: CollectionProfile, names: List<String>, onSave: (CollectionProfile) -> String?, onDismiss: () -> Unit,
+    isNew: Boolean = false) {
     var name by rememberSaveable(initial.id) { mutableStateOf(initial.name) }
     var description by rememberSaveable(initial.id) { mutableStateOf(initial.description) }
     var icon by rememberSaveable(initial.id) { mutableStateOf(initial.icon) }
@@ -65,7 +66,7 @@ fun CollectionEditor(initial: CollectionProfile, names: List<String>, onSave: (C
                 Box(Modifier.size(48.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape), contentAlignment = Alignment.Center) {
                     Icon(icon.vector, null, Modifier.size(26.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
-                Text("Collection", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                Text(if (isNew) "New collection" else "Collection", Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 TextButton(enabled = current.name.isNotBlank() && current.name.length <= 80 && !duplicate, onClick = { error = onSave(current) }) { Text("Save") }
             }
             OutlinedTextField(name, { if (it.length <= 80) { name = it; error = null } }, Modifier.fillMaxWidth(),

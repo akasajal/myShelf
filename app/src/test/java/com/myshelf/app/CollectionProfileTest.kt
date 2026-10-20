@@ -10,6 +10,24 @@ class CollectionProfileTest {
     private val book = ShelfItem(id = "book", title = "A book", type = MediaType.BOOK, collection = " mcu ")
     private val profile = CollectionProfile("MCU", "The connected universe.", CollectionIcon.ROCKET)
 
+    @Test fun creatingAnEmptyCollectionKeepsLooseTitlesUnassignedAndMakesTheCollectionVisible() {
+        val loose = ShelfItem(title = "Loose title")
+        val created = createCollection(listOf(loose), emptyList(), profile.copy(name = " MCU "))
+        assertEquals(listOf(profile), created)
+        assertEquals("", loose.collection)
+        val groups = sortCollections(listOf(loose), CollectionSort.RECENT, created)
+        assertEquals("MCU", groups.single().name)
+        assertTrue(groups.single().items.isEmpty())
+    }
+
+    @Test fun newCollectionCannotDuplicateAnExistingOrInferredName() {
+        assertThrows(IllegalArgumentException::class.java) {
+            createCollection(listOf(movie), emptyList(), profile.copy(name = " mcu "))
+        }
+        assertThrows(IllegalArgumentException::class.java) { createCollection(emptyList(), listOf(profile), profile) }
+        assertThrows(IllegalArgumentException::class.java) { createCollection(emptyList(), emptyList(), profile.copy(name = "")) }
+    }
+
     @Test fun renameUpdatesEveryMemberAndPreservesIdentityAndOtherTitles() {
         val unrelated = movie.copy(id = "dc", collection = "DC")
         val next = customizeCollection(listOf(movie, book, unrelated), listOf(profile), "MCU",
