@@ -10,8 +10,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material.icons.outlined.CreateNewFolder
-import androidx.compose.material.icons.outlined.Style
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import com.myshelf.app.core.model.ShelfItem
 import com.myshelf.app.domain.home.HomeSection
 import com.myshelf.app.domain.home.homeContent
-import com.myshelf.app.ui.components.AddShelfButton
 import com.myshelf.app.ui.components.Cover
 
 @Composable
@@ -116,18 +113,6 @@ private fun HomeEmptyTile(message: String, width: Dp, height: Dp) {
     Surface(Modifier.width(width).height(height), shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Box(Modifier.padding(12.dp), contentAlignment = Alignment.Center) {
             Text(message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
-@Composable
-fun HomeAddButton(onCard: () -> Unit, onCollection: () -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        AddShelfButton(label = "Add card or collection") { expanded = !expanded }
-        DropdownMenu(expanded, { expanded = false }) {
-            DropdownMenuItem(text = { Text("Card") }, leadingIcon = { Icon(Icons.Outlined.Style, null) }, onClick = { expanded = false; onCard() })
-            DropdownMenuItem(text = { Text("Collection") }, leadingIcon = { Icon(Icons.Outlined.CreateNewFolder, null) }, onClick = { expanded = false; onCollection() })
         }
     }
 }

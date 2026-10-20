@@ -139,8 +139,8 @@ fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiometric: (
                             verticalAlignment = Alignment.CenterVertically) {
                             if (tab == MainTab.SHELF || (tab == MainTab.COLLECTIONS && collection != null)) {
                                 ShelfFilters(type, onType = { contexts = contexts + (browseKey to context.copy(media = it?.name)) })
-                            } else Spacer(Modifier.weight(1f))
-                            if (tab == MainTab.HOME) HomeAddButton(
+                            } else if (tab != MainTab.HOME) Spacer(Modifier.weight(1f))
+                            if (tab == MainTab.HOME) HomeAddButton(modifier = Modifier.weight(1f),
                                 onCard = { editing = ShelfItem() },
                                 onCollection = { creatingCollectionId = java.util.UUID.randomUUID().toString() })
                             else AddShelfButton(label = if (tab == MainTab.COLLECTIONS && collection == null) "New collection" else "Add to shelf") {
