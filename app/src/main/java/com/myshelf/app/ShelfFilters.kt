@@ -29,7 +29,7 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
     val offset = with(LocalDensity.current) { 72.dp.roundToPx() }
     val configuration = LocalConfiguration.current
     val maxHeight = (configuration.screenHeightDp * .6f).dp
-    val menuWidth = minOf(240.dp, (configuration.screenWidthDp - 32).coerceAtLeast(0).dp)
+    val menuWidth = minOf(200.dp, (configuration.screenWidthDp - 32).coerceAtLeast(0).dp)
     Box {
         FloatingActionButton(onClick = { expanded = true }, modifier = Modifier.size(56.dp).semantics {
             contentDescription = "Filter: ${type?.label ?: "All media"}${genre?.let { ", $it" }.orEmpty()}"
@@ -39,10 +39,11 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
         }
         if (expanded) Popup(alignment = Alignment.BottomStart, offset = IntOffset(0, -offset),
             onDismissRequest = { expanded = false }, properties = PopupProperties(focusable = true)) {
-            Column(Modifier.heightIn(max = maxHeight).width(menuWidth).verticalScroll(rememberScrollState()).padding(6.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 6.dp, color = MaterialTheme.colorScheme.surface) {
+            Column(Modifier.heightIn(max = maxHeight).width(menuWidth).verticalScroll(rememberScrollState()).padding(vertical = 4.dp)) {
                 FilterOption("All media", Icons.Outlined.Apps, type == null) { onType(null); expanded = false }
-                MediaType.entries.forEach { media ->
+                FilterDivider()
+                MediaType.entries.forEachIndexed { index, media ->
                     val icon = when (media) {
                         MediaType.MOVIE -> Icons.Outlined.Movie
                         MediaType.SERIES -> Icons.Outlined.VideoLibrary
@@ -52,16 +53,20 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
                         MediaType.OTHER -> Icons.Outlined.MoreHoriz
                     }
                     FilterOption(media.label, icon, type == media) { onType(media); expanded = false }
+                    if (index < MediaType.entries.lastIndex) FilterDivider()
                 }
                 if (type != null && genres.isNotEmpty()) {
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+                    FilterDivider()
+                    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
                         Text("Genre · ${type.label}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(12.dp))
                     }
                     FilterOption("All genres", Icons.Outlined.Category, genre == null) { onGenre(null); expanded = false }
                     genres.forEach { value ->
+                        FilterDivider()
                         FilterOption(value, Icons.Outlined.Category, genre == value) { onGenre(value); expanded = false }
                     }
                 }
+            }
             }
         }
     }
@@ -70,14 +75,18 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
 @Composable
 private fun FilterOption(label: String, icon: ImageVector, active: Boolean, onClick: () -> Unit) {
     Surface(onClick = onClick, modifier = Modifier.fillMaxWidth().semantics { selected = active },
-        shape = RoundedCornerShape(16.dp), shadowElevation = 3.dp,
-        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer) {
-        Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, null, Modifier.size(22.dp))
-            Text(label, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (active) Icon(Icons.Outlined.Check, null, Modifier.size(18.dp))
+        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+        contentColor = if (active) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface) {
+        Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Icon(icon, null, Modifier.size(20.dp))
+            Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (active) Icon(Icons.Outlined.Check, null, Modifier.size(16.dp))
         }
     }
+}
+
+@Composable
+private fun FilterDivider() {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .4f))
 }
