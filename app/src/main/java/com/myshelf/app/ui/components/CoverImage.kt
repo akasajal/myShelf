@@ -2,12 +2,12 @@ package com.myshelf.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -48,12 +48,12 @@ private fun CoverFallback(item: ShelfItem) {
         CoverDoodle()
         return
     }
-    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFF607564), Color(0xFF263F36)))),
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.secondaryContainer))),
         contentAlignment = Alignment.Center) {
         val small = maxWidth < 100.dp
         val fontSize = when { small -> 14.sp; maxWidth < 140.dp -> 18.sp; else -> 24.sp }
         Text(item.title, Modifier.padding(if (small) 8.dp else 16.dp), fontFamily = FontFamily.Serif,
-            color = Color(0xFFF4EEDC), fontSize = fontSize, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            color = MaterialTheme.colorScheme.onPrimaryContainer, fontSize = fontSize, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             maxLines = 5, overflow = TextOverflow.Ellipsis)
     }
 }

@@ -16,8 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -101,11 +99,10 @@ private fun PinPadScreen(
     onDigit: (String) -> Unit, onDelete: () -> Unit,
     error: String? = null, onBack: (() -> Unit)? = null, onBiometric: (() -> Unit)? = null
 ) {
-    val light = MaterialTheme.colorScheme.surface.luminance() > .5f
-    val background = if (light) Color(0xFFFAF8FC) else MaterialTheme.colorScheme.surface
-    val keyBackground = if (light) Color(0xFFF1EEF5) else MaterialTheme.colorScheme.surfaceContainerHigh
-    val accent = if (light) lerp(MaterialTheme.colorScheme.primary, Color.White, .25f) else MaterialTheme.colorScheme.primary
-    val idleDot = if (light) Color(0xFFD1CED2) else MaterialTheme.colorScheme.outline
+    val background = MaterialTheme.colorScheme.surface
+    val keyBackground = MaterialTheme.colorScheme.surfaceContainerHigh
+    val accent = MaterialTheme.colorScheme.primary
+    val idleDot = MaterialTheme.colorScheme.outlineVariant
     val enabled = !lock.busy && lock.retrySeconds == 0 && lock.biometricAction == null
     Surface(Modifier.fillMaxSize(), color = background) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 24.dp)) {

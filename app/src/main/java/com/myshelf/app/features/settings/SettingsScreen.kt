@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -50,11 +49,10 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
     pinDialog?.let { disable ->
         PinDialog(lock, disable) { pinDialog = null; lock.clearMessage() }
     }
-    val light = MaterialTheme.colorScheme.surface.luminance() > .5f
-    val background = if (light) Color(0xFFF8F7FA) else MaterialTheme.colorScheme.surface
-    val controlBackground = if (light) Color.White else MaterialTheme.colorScheme.surfaceContainer
-    val selectedBackground = if (light) Color(0xFFE7DFF3) else Color(0xFF413850)
-    val outline = if (light) Color(0xFFD9D7DD) else MaterialTheme.colorScheme.outlineVariant
+    val background = MaterialTheme.colorScheme.surface
+    val controlBackground = MaterialTheme.colorScheme.surfaceContainerLowest
+    val selectedBackground = MaterialTheme.colorScheme.primaryContainer
+    val outline = MaterialTheme.colorScheme.outlineVariant
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
         if (uri != null) vm.exportShelf(uri)
     }
@@ -173,7 +171,7 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             PrivacyToggle("App Lock", Icons.Outlined.Lock, if (lock.enabled) "Protected" else "Off",
                 checked = lock.enabled, enabled = !lock.busy,
-                accent = vm.accent.swatch, modifier = Modifier.weight(1f)) {
+                accent = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f)) {
                 lock.clearMessage(); pinDialog = lock.enabled
             }
             PrivacyToggle("Biometric", Icons.Outlined.Fingerprint,
@@ -184,7 +182,7 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
                     else -> "Off"
                 }, checked = lock.biometricEnabled,
                 enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled),
-                accent = vm.accent.swatch, modifier = Modifier.weight(1f)) { value ->
+                accent = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f)) { value ->
                 if (value) onEnableBiometric() else lock.disableBiometrics()
             }
         }
@@ -219,7 +217,7 @@ private fun PrivacyToggle(title: String, icon: ImageVector, state: String, check
                 Text(state, Modifier.weight(1f), style = MaterialTheme.typography.labelSmall,
                     color = if (checked) accent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .6f))
                 Switch(checked = checked, onCheckedChange = null, enabled = enabled,
-                    colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.White,
+                    colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                         checkedBorderColor = Color.Transparent))
             }
         }
@@ -228,6 +226,5 @@ private fun PrivacyToggle(title: String, icon: ImageVector, state: String, check
 
 @Composable
 private fun SectionLabel(text: String) {
-    val light = MaterialTheme.colorScheme.surface.luminance() > .5f
-    Text(text.uppercase(), color = if (light) Color(0xFFBD7297) else MaterialTheme.colorScheme.primary, fontSize = 11.sp, letterSpacing = 1.5.sp)
+    Text(text.uppercase(), color = MaterialTheme.colorScheme.primary, fontSize = 11.sp, letterSpacing = 1.5.sp)
 }
