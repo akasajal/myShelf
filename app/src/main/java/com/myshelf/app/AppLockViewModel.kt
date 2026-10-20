@@ -1,7 +1,6 @@
 package com.myshelf.app
 
 import android.app.Application
-import android.os.SystemClock
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -31,8 +30,6 @@ class AppLockViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var biometricEnabled by mutableStateOf(enabled && prefs.getBoolean("biometric", false))
         private set
-    var instantLock by mutableStateOf(prefs.getBoolean("instant", true))
-        private set
     var biometricAvailable by mutableStateOf(false)
         private set
     var biometricAction by mutableStateOf<BiometricAction?>(null)
@@ -53,7 +50,6 @@ class AppLockViewModel(app: Application) : AndroidViewModel(app) {
             .canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_STRONG) == BiometricManager.BIOMETRIC_SUCCESS
     }
     fun clearMessage() { message = null }
-    fun setInstant(value: Boolean) { instantLock = value; prefs.edit().putBoolean("instant", value).apply() }
     fun disableBiometrics() { biometricEnabled = false; prefs.edit().putBoolean("biometric", false).apply() }
     fun beginBiometric(action: BiometricAction): Boolean {
         refreshBiometrics()
@@ -74,12 +70,11 @@ class AppLockViewModel(app: Application) : AndroidViewModel(app) {
     fun onBackground() {
         foreground = false
         biometricAction = null
-        session.background(SystemClock.elapsedRealtime(), instantLock)
+        session.background()
         locked = session.locked
     }
     fun onForeground() {
         foreground = true
-        session.foreground(SystemClock.elapsedRealtime())
         locked = session.locked
         refreshBiometrics()
         updateCooldown()
@@ -98,7 +93,7 @@ class AppLockViewModel(app: Application) : AndroidViewModel(app) {
                         .putInt("failures", 0).putLong("retryAt", 0).commit())
                 }
                 enabled = true; biometricEnabled = false; session.enable()
-                if (!foreground) session.background(SystemClock.elapsedRealtime(), instant = true)
+                if (!foreground) session.background()
                 locked = session.locked
                 completed()
             } catch (e: CancellationException) { throw e }
@@ -120,7 +115,7 @@ class AppLockViewModel(app: Application) : AndroidViewModel(app) {
                 if (correct) {
                     if (disable) {
                         withContext(Dispatchers.IO) { check(prefs.edit().clear().commit()) }
-                        enabled = false; biometricEnabled = false; instantLock = true
+                        enabled = false; biometricEnabled = false
                         session.disable(); locked = false
                     } else unlock()
                     prefs.edit().putInt("failures", 0).putLong("retryAt", 0).apply()

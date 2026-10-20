@@ -25,32 +25,29 @@ class LockSecurityTest {
     @Test fun instantLockAppliesBeforeReturningToForeground() {
         val session = LockSession(true)
         session.unlock()
-        session.background(1000, instant = true)
-        assertTrue(session.locked)
-        session.foreground(1001)
+        session.background()
         assertTrue(session.locked)
     }
-    @Test fun delayedLockPreservesShortTripsButLocksAfterOneMinute() {
-        val session = LockSession(true)
-        session.unlock()
-        session.background(1000, instant = false)
-        session.foreground(60_999)
+    @Test fun newlyEnabledLockAppliesOnTheNextBackgroundEvent() {
+        val session = LockSession(false)
+        session.enable()
         assertFalse(session.locked)
-        session.background(70_000, instant = false)
-        session.foreground(130_000)
+        session.background()
         assertTrue(session.locked)
     }
     @Test fun disablingClearsLockAndIgnoresBackgroundEvents() {
         val session = LockSession(true)
         session.disable()
-        session.background(0, instant = true)
-        session.foreground(100_000)
+        session.background()
         assertFalse(session.locked)
     }
-    @Test fun returningWithoutBackgroundDoesNotLockUnlockedSession() {
+    @Test fun unlockingLastsUntilTheNextBackgroundEvent() {
         val session = LockSession(true)
         session.unlock()
-        session.foreground(100_000)
+        assertFalse(session.locked)
+        session.background()
+        assertTrue(session.locked)
+        session.unlock()
         assertFalse(session.locked)
     }
 }

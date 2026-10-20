@@ -22,18 +22,9 @@ object PinCode {
 class LockSession(private var enabled: Boolean) {
     var locked = enabled
         private set
-    private var backgroundAt: Long? = null
 
     fun enable() { enabled = true; unlock() }
     fun disable() { enabled = false; unlock() }
-    fun unlock() { locked = false; backgroundAt = null }
-    fun background(now: Long, instant: Boolean) {
-        if (!enabled) return
-        backgroundAt = now
-        if (instant) locked = true
-    }
-    fun foreground(now: Long) {
-        if (enabled && backgroundAt?.let { now - it >= 60_000 } == true) locked = true
-        backgroundAt = null
-    }
+    fun unlock() { locked = false }
+    fun background() { if (enabled) locked = true }
 }

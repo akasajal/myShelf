@@ -167,10 +167,6 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
             checked = lock.biometricEnabled, enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled), accent = vm.accent.swatch) { value ->
             if (value) onEnableBiometric() else lock.disableBiometrics()
         }
-        HorizontalDivider(color = outline.copy(alpha = .25f))
-        PrivacyRow("Instant Lock", if (lock.instantLock) "Lock immediately in background" else "Lock after 1 minute in background",
-            checked = lock.enabled && lock.instantLock, enabled = lock.enabled && !lock.busy, accent = vm.accent.swatch,
-            onChange = lock::setInstant)
         if (pinDialog == null) lock.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(32.dp))
         SectionLabel("About")
