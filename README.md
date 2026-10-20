@@ -5,6 +5,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 ## Included
 
 - Movies, series, TV shows, comics, books, and other media.
+- Home as the default first tab, followed by My Shelf, Collections, and Settings. Home offers a welcome message, horizontal Continue (up to four active titles) and Recently added (up to six titles) rows, and a final View all card in each row. Its bottom-right + menu opens Card or Collection creation.
 - Collections that span media types, such as Marvel and DC.
 - Collection customization: 16 preset icons, editable names, and descriptions, included in portable backups.
 - Genre labels on titles, scoped to their media type.
@@ -17,7 +18,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Manual title entry and a cover sheet for device images, clipboard images, and direct image links.
 - A compact squircle + button for the add form, paired with a left-side Filter button that opens one compact sheet with seven media rows. Sort stays in the top toolbar.
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
-- A third Settings tab with saved System, Dark, and Light themes and six accent colors.
+- A Settings tab with saved System, Dark, and Light themes and six accent colors.
 - A saved Cards per row preference (2, 3, or 4) for the shelf and collection contents.
 - Saved Comfortable/Compact card details, plus separate search, media filter, and scroll positions for My Shelf and each collection during navigation and activity restoration.
 - Sort menus on My Shelf, the collections list, and each collection's contents. Shelf and individual collections remember their own choices; the collections list supports names, title counts, and recent additions. Title lists support added order, alphabetical order, personal rating, and release year. Unrated titles and unknown years appear last for their respective sorts. Sorting uses the stored addition order and leaves saved entries unchanged.
@@ -53,6 +54,12 @@ All new covers are validated, resized to at most 1,600 pixels on the longest edg
 Tap + on the Collections list to create a collection with a name, description, and preset icon. Inside a collection, + adds a title to it. Tap the pencil on a collection card or inside a collection to customize it. Choose from 16 local Material icons. Renaming updates every title in that collection and keeps its identity, saved browsing context, and sort preference. Names must be unique ignoring case and surrounding spaces. Customizations remain saved even when the collection has no titles.
 
 Collection names, descriptions, and icon choices travel with ZIP backups. Skip existing keeps matching collection customizations; Update matching applies incoming customizations and follows collection IDs through renames; Replace shelf uses only the backup's collections. Conflicting renames are rejected without applying the import. Older backups without collection details remain supported.
+
+## Home
+
+Home previews keep the existing My Shelf grid and controls intact. Tap a preview to open details, or long-press for quick actions. View all in Continue opens My Shelf with In progress selected; View all in Recently added opens the full shelf sorted Recently added. These shortcuts clear previous searches and media filters so all matching titles are visible. Normal navigation preserves saved shelf and collection browsing context. Home's vertical and horizontal positions restore when returning from details or another tab.
+
+Continue excludes caught-up, finished, paused, dropped, and planned titles; it uses season progress for tracked series. Empty rows show a short empty state and still end with View all. Creating a collection from Home opens the new collection so you can add its first title.
 
 ## Seasons
 

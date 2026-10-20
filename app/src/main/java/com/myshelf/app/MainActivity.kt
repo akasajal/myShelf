@@ -105,9 +105,14 @@ class MainActivity : FragmentActivity() {
 @Composable
 private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiometric: () -> Unit) {
     var collection by rememberSaveable { mutableStateOf<String?>(null) }
-    var tab by rememberSaveable { mutableIntStateOf(0) }
+    var tab by rememberSaveable(key = "main_tab_with_home") { mutableStateOf(MainTab.HOME) }
     var contexts by rememberSaveable(stateSaver = BrowsingContextsSaver) { mutableStateOf<Map<String, BrowsingContext>>(emptyMap()) }
-    val browseKey = if (tab == 0) "shelf" else collection?.let { "collection:${vm.collectionProfile(it).id}" } ?: "collections"
+    val browseKey = when (tab) {
+        MainTab.SHELF -> "shelf"
+        MainTab.COLLECTIONS -> collection?.let { "collection:${vm.collectionProfile(it).id}" } ?: "collections"
+        MainTab.HOME -> "home"
+        MainTab.SETTINGS -> "settings"
+    }
     val context = contexts[browseKey] ?: BrowsingContext()
     val type = context.media?.let(MediaType::valueOf)
     val query = context.query
@@ -121,6 +126,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     val collectionsListState = rememberLazyListState()
     val gridStates = rememberSaveableStateHolder()
     val detailsState = rememberSaveableStateHolder()
+    val homeState = rememberSaveableStateHolder()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val shelfItems = vm.items
@@ -133,7 +139,10 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     creatingCollectionId?.let { id -> key(id) {
         CollectionEditor(CollectionProfile(name = "", id = id), collections, onSave = { profile ->
             val error = vm.addCollection(profile)
-            if (error == null) creatingCollectionId = null
+            if (error == null) {
+                creatingCollectionId = null
+                if (tab == MainTab.HOME) { tab = MainTab.COLLECTIONS; collection = profile.name }
+            }
             error
         }, onDismiss = { creatingCollectionId = null }, isNew = true)
     } }
@@ -158,7 +167,10 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     duration = SnackbarDuration.Long) == SnackbarResult.ActionPerformed) vm.undoDelete(removed)
         }
     }
-    BackHandler(enabled = editing == null && selected == null && tab == 1 && collection != null) { collection = null }
+    BackHandler(enabled = editing == null && selected == null && tab != MainTab.HOME) {
+        if (tab == MainTab.COLLECTIONS && collection != null) collection = null
+        else { tab = MainTab.HOME; collection = null }
+    }
     if (quickItem != null) {
         val action = quickAction
         if (action == null) TitleActionsSheet(quickItem, onAction = {
@@ -186,14 +198,17 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
             containerColor = Paper,
             floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
-                if (tab != 2 && !vm.transferBusy) {
+                if (tab != MainTab.SETTINGS && !vm.transferBusy) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically) {
-                        if (tab == 0 || collection != null) {
+                        if (tab == MainTab.SHELF || (tab == MainTab.COLLECTIONS && collection != null)) {
                             ShelfFilters(type, onType = { contexts = contexts + (browseKey to context.copy(media = it?.name)) })
                         } else Spacer(Modifier.weight(1f))
-                        AddShelfButton(label = if (tab == 1 && collection == null) "New collection" else "Add to shelf") {
-                            if (tab == 1 && collection == null) creatingCollectionId = java.util.UUID.randomUUID().toString()
+                        if (tab == MainTab.HOME) HomeAddButton(
+                            onCard = { editing = ShelfItem() },
+                            onCollection = { creatingCollectionId = java.util.UUID.randomUUID().toString() })
+                        else AddShelfButton(label = if (tab == MainTab.COLLECTIONS && collection == null) "New collection" else "Add to shelf") {
+                            if (tab == MainTab.COLLECTIONS && collection == null) creatingCollectionId = java.util.UUID.randomUUID().toString()
                             else editing = ShelfItem(collection = collection.orEmpty())
                         }
                     }
@@ -201,28 +216,39 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
             },
             bottomBar = {
                 NavigationBar(containerColor = Paper) {
-                    NavigationBarItem(selected = tab == 0, enabled = !vm.transferBusy, onClick = { tab = 0; collection = null },
+                    NavigationBarItem(selected = tab == MainTab.HOME, enabled = !vm.transferBusy, onClick = { tab = MainTab.HOME; collection = null },
+                        icon = { Icon(Icons.Outlined.Home, null) }, label = { Text("Home") })
+                    NavigationBarItem(selected = tab == MainTab.SHELF, enabled = !vm.transferBusy, onClick = { tab = MainTab.SHELF; collection = null },
                         icon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, null) }, label = { Text("My shelf") })
-                    NavigationBarItem(selected = tab == 1, enabled = !vm.transferBusy, onClick = { tab = 1; collection = null },
+                    NavigationBarItem(selected = tab == MainTab.COLLECTIONS, enabled = !vm.transferBusy, onClick = { tab = MainTab.COLLECTIONS; collection = null },
                         icon = { Icon(Icons.Outlined.CollectionsBookmark, null) }, label = { Text("Collections") })
-                    NavigationBarItem(selected = tab == 2, enabled = !vm.transferBusy, onClick = { tab = 2 },
+                    NavigationBarItem(selected = tab == MainTab.SETTINGS, enabled = !vm.transferBusy, onClick = { tab = MainTab.SETTINGS },
                         icon = { Icon(Icons.Outlined.Settings, null) }, label = { Text("Settings") })
                 }
             }
         ) { padding ->
-            if (tab == 2) {
+            if (tab == MainTab.SETTINGS) {
                 SettingsScreen(vm, appLock, onEnableBiometric, Modifier.padding(padding))
+            } else if (tab == MainTab.HOME) homeState.SaveableStateProvider("home") {
+                HomeScreen(shelfItems, vm.loadError, onOpen = { selectedId = it.id },
+                    onLongPress = { quickId = it.id; quickAction = null },
+                    onViewAll = { section ->
+                        contexts = contexts + ("shelf" to BrowsingContext(status = if (section == HomeSection.CONTINUE) StatusFilter.ACTIVE.name else null))
+                        vm.updateShelfSort(ItemSort.NEWEST)
+                        gridStates.removeState("shelf")
+                        collection = null; tab = MainTab.SHELF
+                    }, modifier = Modifier.padding(padding))
             } else {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 22.dp)) {
                 Spacer(Modifier.height(20.dp))
-                val collectionProfile = collection?.takeIf { tab == 1 }?.let(vm::collectionProfile)
+                val collectionProfile = collection?.takeIf { tab == MainTab.COLLECTIONS }?.let(vm::collectionProfile)
                 Row(Modifier.fillMaxWidth().padding(bottom = if (collectionProfile?.description.isNullOrBlank()) 20.dp else 6.dp),
                     verticalAlignment = Alignment.CenterVertically) {
                     if (collectionProfile != null) {
                         Icon(collectionProfile.icon.vector, null, Modifier.size(24.dp), tint = Green)
                         Spacer(Modifier.width(10.dp))
                     }
-                    Text(if (tab == 0) "My Shelf" else collectionProfile?.name ?: "Collections", style = MaterialTheme.typography.headlineSmall,
+                    Text(if (tab == MainTab.SHELF) "My Shelf" else collectionProfile?.name ?: "Collections", style = MaterialTheme.typography.headlineSmall,
                         color = Ink, modifier = Modifier.weight(1f))
                     if (collectionProfile != null) IconButton(onClick = { editingCollection = collectionProfile.name }, enabled = !vm.transferBusy) {
                         Icon(Icons.Outlined.Edit, "Customize collection")
@@ -233,7 +259,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 }
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-                if (tab == 1 && collection == null) {
+                if (tab == MainTab.COLLECTIONS && collection == null) {
                     val groups = remember(shelfItems, profiles, vm.collectionsSort) {
                         sortCollections(shelfItems, vm.collectionsSort, profiles)
                     }
