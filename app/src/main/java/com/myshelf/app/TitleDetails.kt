@@ -47,7 +47,7 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
             IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
         }, actions = {
             IconButton(onEdit) { Icon(Icons.Outlined.Edit, "Edit title") }
-            IconButton(onRemove) { Icon(Icons.Outlined.DeleteOutline, "Remove title") }
+            IconButton(onRemove) { Icon(Icons.Outlined.DeleteOutline, "Remove title", tint = MaterialTheme.colorScheme.error) }
         })
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())

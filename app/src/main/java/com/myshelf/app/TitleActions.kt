@@ -27,7 +27,7 @@ fun TitleActionsSheet(item: ShelfItem, onAction: (TitleAction) -> Unit, onDismis
                     TitleAction.RATING -> Icons.Outlined.StarBorder
                     TitleAction.COLLECTION -> Icons.Outlined.CollectionsBookmark
                     TitleAction.REMOVE -> Icons.Outlined.DeleteOutline
-                }, null)
+                }, null, tint = if (action == TitleAction.REMOVE) MaterialTheme.colorScheme.error else LocalContentColor.current)
             }, modifier = Modifier.clickable { onAction(action) })
         }
         Spacer(Modifier.height(24.dp))
