@@ -34,7 +34,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.SubcomposeAsyncImage
+import coil.request.ImageRequest
+import coil.size.Precision
 import kotlinx.coroutines.launch
 
 private val Ink: Color @Composable get() = MaterialTheme.colorScheme.onSurface
@@ -254,8 +258,12 @@ private fun EmptyShelf(title: String, message: String, modifier: Modifier = Modi
 @Composable
 fun Cover(item: ShelfItem, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop,
     placeholder: @Composable () -> Unit = { CoverFallback(item) }) {
-    SubcomposeAsyncImage(model = item.cover.ifBlank { null }, contentDescription = "Cover for ${item.title}",
-        contentScale = contentScale, modifier = modifier,
+    val context = LocalContext.current
+    val request = remember(context, item.cover) {
+        ImageRequest.Builder(context).data(item.cover.ifBlank { null }).precision(Precision.EXACT).build()
+    }
+    SubcomposeAsyncImage(model = request, contentDescription = "Cover for ${item.title}",
+        contentScale = contentScale, filterQuality = FilterQuality.High, modifier = modifier,
         loading = { placeholder() }, error = { placeholder() })
 }
 
