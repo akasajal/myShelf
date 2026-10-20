@@ -225,16 +225,14 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                 }
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (tab == 1 && collection == null) {
-                    val groups = remember(shelfItems, profiles, status, vm.collectionsSort) {
-                        sortCollections(filterShelf(shelfItems, null, null, null, "", status), vm.collectionsSort, profiles, includeEmpty = status == null)
+                    val groups = remember(shelfItems, profiles, vm.collectionsSort) {
+                        sortCollections(shelfItems, vm.collectionsSort, profiles)
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${groups.size} collections", Modifier.weight(1f), fontSize = 12.sp, color = Green)
-                        StatusFilterMenu(status) { contexts = contexts + (browseKey to context.copy(status = it?.name)) }
                         SortMenu(vm.collectionsSort, CollectionSort.entries, { it.label }, vm::updateCollectionsSort)
                     }
-                    if (groups.isEmpty()) EmptyShelf(if (status == null) "No collections yet" else "No matches",
-                        if (status == null) "Assign a collection when adding a title." else "Try another status filter.", Modifier.weight(1f))
+                    if (groups.isEmpty()) EmptyShelf("No collections yet", "Assign a collection when adding a title.", Modifier.weight(1f))
                     else LazyColumn(state = collectionsListState, verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
                         items(groups, key = { it.key }, contentType = { "collection" }) { group ->
                             Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {

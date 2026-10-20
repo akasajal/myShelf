@@ -10,7 +10,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Genre labels on titles, scoped to their media type.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
-- Status filtering beside Sort on the shelf, collections list, and collection contents: On my list, In progress, Caught up, Finished, On hold, and Dropped. Collection counts reflect matching titles. Each screen remembers its status choice alongside search and media filters.
+- Status filtering beside Sort on My Shelf and inside each collection: On my list, In progress, Caught up, Finished, On hold, and Dropped. Each title grid remembers its status choice alongside search and media filters. The collections list shows all collections and their full title counts, with Sort only.
 - One card per series or TV show, with individual season status, ratings, and episode counts inside.
 - A detail page with immediate status, rating, collection, and episode updates; a separate Edit form handles metadata.
 - Long-press title actions, removal with Undo, and duplicate-title warnings when adding or renaming within the same media type.
