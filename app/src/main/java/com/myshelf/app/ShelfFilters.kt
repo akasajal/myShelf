@@ -40,7 +40,7 @@ fun ShelfFilters(type: MediaType?, onType: (MediaType?) -> Unit) {
         if (expanded) Popup(alignment = Alignment.BottomStart, offset = IntOffset(0, -offset),
             onDismissRequest = { expanded = false }, properties = PopupProperties(focusable = true)) {
             Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 6.dp, color = MaterialTheme.colorScheme.surface) {
-            Column(Modifier.heightIn(max = maxHeight).width(menuWidth).verticalScroll(rememberScrollState()).padding(vertical = 4.dp)) {
+            Column(Modifier.heightIn(max = maxHeight).width(menuWidth).verticalScroll(rememberScrollState())) {
                 FilterOption("All media", Icons.Outlined.Apps, type == null) { onType(null); expanded = false }
                 FilterDivider()
                 MediaType.entries.forEachIndexed { index, media ->
