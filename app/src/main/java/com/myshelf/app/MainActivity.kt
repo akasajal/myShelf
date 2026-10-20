@@ -13,9 +13,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -99,6 +101,8 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editing by vm::editing
+    val collectionsListState = rememberLazyListState()
+    val gridStates = rememberSaveableStateHolder()
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
     val visible = sortShelf(filterShelf(vm.items, type, null, collection, query), itemOrder)
     when {
@@ -148,7 +152,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         SortMenu(vm.collectionsSort, CollectionSort.entries, { it.label }, vm::updateCollectionsSort)
                     }
                     if (groups.isEmpty()) EmptyShelf("No collections yet", "Assign a collection when adding a title.", Modifier.weight(1f))
-                    else LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
+                    else LazyColumn(state = collectionsListState, verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
                         items(groups, key = { it.key }) { group ->
                             Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -176,9 +180,13 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     }
                     if (visible.isEmpty()) EmptyShelf(if (vm.items.isEmpty()) "No titles yet" else "No matches",
                         if (vm.items.isEmpty()) "Add a title to get started." else "Try another filter.", Modifier.weight(1f))
-                    else LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(22.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                        items(visible, key = { it.id }) { item -> ShelfCard(item, compact = vm.cardsPerRow > 2) { editing = item } }
+                    else gridStates.SaveableStateProvider(collection?.let { "collection:$it" } ?: "shelf") {
+                        val gridState = rememberLazyGridState()
+                        LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), state = gridState,
+                            horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(22.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
+                            items(visible, key = { it.id }) { item -> ShelfCard(item, compact = vm.cardsPerRow > 2) { editing = item } }
+                        }
                     }
                 }
             }
