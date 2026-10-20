@@ -252,9 +252,10 @@ private fun EmptyShelf(title: String, message: String, modifier: Modifier = Modi
 }
 
 @Composable
-fun Cover(item: ShelfItem, modifier: Modifier = Modifier, placeholder: @Composable () -> Unit = { CoverFallback(item) }) {
+fun Cover(item: ShelfItem, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Crop,
+    placeholder: @Composable () -> Unit = { CoverFallback(item) }) {
     SubcomposeAsyncImage(model = item.cover.ifBlank { null }, contentDescription = "Cover for ${item.title}",
-        contentScale = ContentScale.Crop, modifier = modifier,
+        contentScale = contentScale, modifier = modifier,
         loading = { placeholder() }, error = { placeholder() })
 }
 

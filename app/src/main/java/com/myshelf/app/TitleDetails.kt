@@ -2,6 +2,7 @@ package com.myshelf.app
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -13,10 +14,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit, onEdit: () -> Unit,
     onSave: (ShelfItem) -> Unit, onRemove: () -> Unit) {
@@ -47,29 +52,35 @@ fun TitleDetails(item: ShelfItem, collections: List<String>, onBack: () -> Unit,
     }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
-                Card(Modifier.width(108.dp).aspectRatio(.69f), shape = RoundedCornerShape(12.dp)) {
-                    Cover(item, Modifier.fillMaxSize())
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp)) {
+                BoxWithConstraints(Modifier.fillMaxWidth()) {
+                    val artworkHeight = (maxWidth / .85f).coerceIn(260.dp, 420.dp)
+                    Box(Modifier.fillMaxWidth().height(artworkHeight)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                        Cover(item, Modifier.fillMaxSize().blur(24.dp).alpha(.4f).clearAndSetSemantics {}, placeholder = {})
+                        Cover(item, Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                    }
                 }
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(item.title, style = MaterialTheme.typography.titleLarge)
+            }
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(item.title, style = MaterialTheme.typography.headlineSmall)
                     val metadata = listOf(item.year, item.genre).filter { it.isNotBlank() }
                     if (metadata.isNotEmpty()) Text(metadata.joinToString(" · "),
                         style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     if (item.creator.isNotBlank()) Text(item.creator, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = { action = TitleAction.COLLECTION }, contentPadding = PaddingValues(horizontal = 0.dp)) {
-                        Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(16.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(item.collection.ifBlank { "Add to collection" }, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AssistChip(onClick = { action = TitleAction.STATUS }, label = { Text(item.statusLabel) },
+                            leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) })
+                        AssistChip(onClick = { action = TitleAction.RATING }, label = { Text(if (item.rating == 0) "Rate" else "${item.rating} / 5") },
+                            leadingIcon = { Icon(Icons.Outlined.StarBorder, null, Modifier.size(18.dp)) })
+                        AssistChip(onClick = { action = TitleAction.COLLECTION }, label = {
+                            Text(item.collection.ifBlank { "Add to collection" }, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }, leadingIcon = { Icon(Icons.Outlined.CollectionsBookmark, null, Modifier.size(18.dp)) })
                     }
                 }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = { action = TitleAction.STATUS }, label = { Text(item.statusLabel) },
-                    leadingIcon = { Icon(Icons.Outlined.CheckCircle, null, Modifier.size(18.dp)) })
-                AssistChip(onClick = { action = TitleAction.RATING }, label = { Text(if (item.rating == 0) "Rate" else "${item.rating} / 5") },
-                    leadingIcon = { Icon(Icons.Outlined.StarBorder, null, Modifier.size(18.dp)) })
             }
             if (item.type.supportsSeasons) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
