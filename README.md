@@ -6,6 +6,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 
 - Movies, series, TV shows, comics, books, and other media.
 - Collections that span media types, such as Marvel and DC.
+- Collection customization: 16 preset icons, editable names, and descriptions, included in portable backups.
 - Genre labels on titles, scoped to their media type.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
@@ -46,6 +47,12 @@ Covers are included as bytes rather than device-specific document links. Restore
 Tap the cover or doodle to open a bottom sheet: Choose image, Paste image, Paste image link, and Remove cover when present. Paste image expects an actual clipboard image URI; copied website links belong in Paste image link. The link field can be edited before tapping Add cover and expects a direct HTTPS image, not a web page. Clipboard contents are read only after a paste action.
 
 All new covers are validated, resized to at most 1,600 pixels on the longest edge, and saved as app-private JPEGs. Downloads are limited to 8 MB with timeouts and HTTPS-only redirects. An unsuccessful or cancelled import preserves the current cover. Once saved, gallery, pasted, and downloaded covers work offline and are included in backups. Existing cover document links from older versions remain supported.
+
+## Collections
+
+Tap the pencil on a collection card or inside a collection to customize its icon, name, and description. Choose from 16 local Material icons. Renaming updates every title in that collection and keeps its identity, saved browsing context, and sort preference. Names must be unique ignoring case and surrounding spaces. Customizations remain saved even when the collection has no titles.
+
+Collection names, descriptions, and icon choices travel with ZIP backups. Skip existing keeps matching collection customizations; Update matching applies incoming customizations and follows collection IDs through renames; Replace shelf uses only the backup's collections. Conflicting renames are rejected without applying the import. Older backups without collection details remain supported.
 
 ## Seasons
 

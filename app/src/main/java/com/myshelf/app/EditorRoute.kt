@@ -6,7 +6,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import org.json.JSONArray
 
 @Composable
-fun EditorRoute(initial: ShelfItem, items: List<ShelfItem>, onBack: () -> Unit, onSave: (ShelfItem) -> Unit,
+fun EditorRoute(initial: ShelfItem, items: List<ShelfItem>, collections: List<String>, onBack: () -> Unit, onSave: (ShelfItem) -> Unit,
     onDelete: (String) -> Unit, onOpenExisting: (ShelfItem) -> Unit) {
     var pending by rememberSaveable(initial.id) { mutableStateOf<String?>(null) }
     val candidate = pending?.let { ShelfJson.decode(JSONArray(it)).single() }
@@ -21,7 +21,7 @@ fun EditorRoute(initial: ShelfItem, items: List<ShelfItem>, onBack: () -> Unit, 
             }
         },
         dismissButton = { TextButton(onClick = { pending = null }) { Text("Keep editing") } })
-    ItemEditor(initial, items.map { it.collection }.filter { it.isNotBlank() }.distinct(), onBack,
+    ItemEditor(initial, collections, onBack,
         onSave = { updated ->
             val checkDuplicate = items.none { it.id == updated.id } || initial.title != updated.title || initial.type != updated.type
             if (checkDuplicate && findDuplicate(items, updated) != null) pending = ShelfJson.encode(listOf(updated)).toString()

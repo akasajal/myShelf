@@ -14,7 +14,7 @@ enum class CollectionSort(val label: String) {
     MOST_TITLES("Most titles"), FEWEST_TITLES("Fewest titles")
 }
 
-data class ShelfCollection(val key: String, val name: String, val items: List<ShelfItem>)
+data class ShelfCollection(val key: String, val name: String, val items: List<ShelfItem>, val profile: CollectionProfile = CollectionProfile(name))
 
 fun collectionKey(name: String): String = name.trim().lowercase(Locale.ROOT)
 
@@ -34,9 +34,17 @@ fun sortShelf(items: List<ShelfItem>, order: ItemSort): List<ShelfItem> {
 
 private fun releaseYear(item: ShelfItem): Int? = item.year.trim().toIntOrNull()?.takeIf { it > 0 }
 
-fun sortCollections(items: List<ShelfItem>, order: CollectionSort): List<ShelfCollection> {
+fun sortCollections(items: List<ShelfItem>, order: CollectionSort, profiles: List<CollectionProfile> = emptyList(),
+    includeEmpty: Boolean = true): List<ShelfCollection> {
+    val metadata = profiles.associateBy { collectionKey(it.name) }
     val groups = items.filter { it.collection.isNotBlank() }.groupBy { collectionKey(it.collection) }
-        .map { (key, titles) -> ShelfCollection(key, titles.first().collection.trim(), titles) }
+        .map { (key, titles) ->
+            val profile = metadata[key] ?: CollectionProfile(titles.first().collection.trim())
+            ShelfCollection(key, profile.name, titles, profile)
+        }.toMutableList()
+    if (includeEmpty) profiles.filter { profile -> groups.none { it.key == collectionKey(profile.name) } }.forEach {
+        groups += ShelfCollection(collectionKey(it.name), it.name, emptyList(), it)
+    }
     val name = compareBy(String.CASE_INSENSITIVE_ORDER) { collection: ShelfCollection -> collection.name }
     return when (order) {
         CollectionSort.RECENT -> groups

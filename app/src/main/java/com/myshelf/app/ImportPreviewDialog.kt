@@ -51,6 +51,16 @@ fun ImportPreviewDialog(vm: ShelfViewModel, backup: ImportedShelf) {
                     ImportMode.UPDATE_MATCHING -> "Matching IDs receive all backup details, including covers, status, ratings, seasons, and notes. Other saved titles stay."
                     ImportMode.REPLACE -> "Only titles in this backup will remain."
                 }, style = MaterialTheme.typography.bodySmall)
+                if (backup.collections.isNotEmpty()) {
+                    Text("${backup.collections.size} collection customizations", style = MaterialTheme.typography.bodyMedium)
+                    backup.collections.take(20).forEach { profile ->
+                        val matched = vm.collectionProfiles.any { it.id == profile.id || collectionKey(it.name) == collectionKey(profile.name) }
+                        val action = if (!matched) "Add" else if (mode == ImportMode.SKIP_EXISTING) "Keep" else "Update"
+                        Text("$action · ${profile.name} · ${profile.icon.label}", style = MaterialTheme.typography.bodySmall)
+                    }
+                } else if (mode == ImportMode.REPLACE && vm.collectionProfiles.isNotEmpty()) {
+                    Text("Existing collection customizations will be removed.", style = MaterialTheme.typography.bodySmall)
+                }
                 HorizontalDivider()
                 backup.items.take(40).forEach { incoming ->
                     val previous = existing[incoming.id]
@@ -64,7 +74,7 @@ fun ImportPreviewDialog(vm: ShelfViewModel, backup: ImportedShelf) {
                 if (mode == ImportMode.REPLACE) changes.removed.take(20).forEach {
                     Text("Remove · ${it.title}", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 }
-                if (backup.items.isEmpty()) Text("This backup is empty.")
+                if (backup.items.isEmpty() && backup.collections.isEmpty()) Text("This backup is empty.")
                 vm.transferMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },

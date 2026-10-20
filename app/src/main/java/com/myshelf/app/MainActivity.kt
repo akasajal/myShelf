@@ -107,7 +107,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var collection by rememberSaveable { mutableStateOf<String?>(null) }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var contexts by rememberSaveable(stateSaver = BrowsingContextsSaver) { mutableStateOf<Map<String, BrowsingContext>>(emptyMap()) }
-    val browseKey = if (tab == 0) "shelf" else collection?.let { "collection:${collectionKey(it)}" } ?: "collections"
+    val browseKey = if (tab == 0) "shelf" else collection?.let { "collection:${vm.collectionProfile(it).id}" } ?: "collections"
     val context = contexts[browseKey] ?: BrowsingContext()
     val type = context.media?.let(MediaType::valueOf)
     val query = context.query
@@ -115,6 +115,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
     var quickId by rememberSaveable { mutableStateOf<String?>(null) }
     var quickAction by rememberSaveable { mutableStateOf<TitleAction?>(null) }
+    var editingCollection by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by vm::editing
     val collectionsListState = rememberLazyListState()
     val gridStates = rememberSaveableStateHolder()
@@ -122,9 +123,22 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val shelfItems = vm.items
-    val collections = remember(shelfItems) { shelfItems.map { it.collection }.filter { it.isNotBlank() }.distinct() }
+    val profiles = vm.collectionProfiles
+    val collections = remember(shelfItems, profiles) {
+        (profiles.map { it.name } + shelfItems.map { it.collection }).filter { it.isNotBlank() }.distinctBy(::collectionKey)
+    }
     val selected = remember(shelfItems, selectedId) { shelfItems.find { it.id == selectedId } }
     val quickItem = remember(shelfItems, quickId) { shelfItems.find { it.id == quickId } }
+    editingCollection?.let { original -> key(original) {
+        CollectionEditor(vm.collectionProfile(original), collections, onSave = { updated ->
+            val error = vm.updateCollection(original, updated)
+            if (error == null) {
+                if (collection?.let(::collectionKey) == collectionKey(original)) collection = updated.name
+                editingCollection = null
+            }
+            error
+        }, onDismiss = { editingCollection = null })
+    } }
     val removeTitle: (String) -> Unit = remove@{ id ->
         val removed = vm.delete(id) ?: return@remove
         if (selectedId == id) selectedId = null
@@ -152,7 +166,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     }
     Box(Modifier.fillMaxSize()) {
     when {
-        editing != null -> EditorRoute(editing!!, vm.items,
+        editing != null -> EditorRoute(editing!!, vm.items, collections,
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
             onDelete = removeTitle,
             onOpenExisting = { editing = null; selectedId = it.id })
@@ -192,12 +206,27 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
             } else {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 22.dp)) {
                 Spacer(Modifier.height(20.dp))
-                Text(if (tab == 0) "My Shelf" else collection ?: "Collections", style = MaterialTheme.typography.headlineSmall,
-                    color = Ink, modifier = Modifier.padding(bottom = 20.dp))
+                val collectionProfile = collection?.takeIf { tab == 1 }?.let(vm::collectionProfile)
+                Row(Modifier.fillMaxWidth().padding(bottom = if (collectionProfile?.description.isNullOrBlank()) 20.dp else 6.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    if (collectionProfile != null) {
+                        Icon(collectionProfile.icon.vector, null, Modifier.size(24.dp), tint = Green)
+                        Spacer(Modifier.width(10.dp))
+                    }
+                    Text(if (tab == 0) "My Shelf" else collectionProfile?.name ?: "Collections", style = MaterialTheme.typography.headlineSmall,
+                        color = Ink, modifier = Modifier.weight(1f))
+                    if (collectionProfile != null) IconButton(onClick = { editingCollection = collectionProfile.name }, enabled = !vm.transferBusy) {
+                        Icon(Icons.Outlined.Edit, "Customize collection")
+                    }
+                }
+                collectionProfile?.description?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, Modifier.padding(bottom = 16.dp), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (tab == 1 && collection == null) {
-                    val groups = remember(shelfItems, status, vm.collectionsSort) {
-                        sortCollections(filterShelf(shelfItems, null, null, null, "", status), vm.collectionsSort)
+                    val groups = remember(shelfItems, profiles, status, vm.collectionsSort) {
+                        sortCollections(filterShelf(shelfItems, null, null, null, "", status), vm.collectionsSort, profiles, includeEmpty = status == null)
                     }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("${groups.size} collections", Modifier.weight(1f), fontSize = 12.sp, color = Green)
@@ -210,12 +239,17 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                         items(groups, key = { it.key }, contentType = { "collection" }) { group ->
                             Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Outlined.CollectionsBookmark, null, tint = Green)
+                                    Icon(group.profile.icon.vector, null, tint = Green)
                                     Column(Modifier.weight(1f).padding(start = 16.dp)) {
                                         Text(group.name, fontFamily = FontFamily.Serif, fontSize = 24.sp)
+                                        if (group.profile.description.isNotBlank()) Text(group.profile.description, maxLines = 2,
+                                            overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("${group.items.size} titles · ${group.items.map { it.type }.distinct().size} media types", fontSize = 12.sp)
                                     }
-                                    Icon(Icons.Outlined.ChevronRight, null)
+                                    IconButton(onClick = { editingCollection = group.name }, enabled = !vm.transferBusy) {
+                                        Icon(Icons.Outlined.Edit, "Customize ${group.name}")
+                                    }
                                 }
                             }
                         }

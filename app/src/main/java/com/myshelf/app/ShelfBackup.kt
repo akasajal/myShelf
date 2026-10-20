@@ -8,7 +8,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-data class ImportedShelf(val items: List<ShelfItem>, val covers: Map<String, ByteArray>)
+data class ImportedShelf(val items: List<ShelfItem>, val covers: Map<String, ByteArray>, val collections: List<CollectionProfile> = emptyList())
 data class ExportResult(val titles: Int, val missingCovers: Int)
 
 /** Portable backup: cover references are archive keys, never device paths. */
@@ -19,8 +19,10 @@ object ShelfBackup {
     private const val MAX_TOTAL = 64 * 1024 * 1024
     private val coverName = Regex("covers/[0-9]+\\.img")
 
-    fun write(output: OutputStream, items: List<ShelfItem>, readCover: (String) -> InputStream?): ExportResult {
+    fun write(output: OutputStream, items: List<ShelfItem>, collections: List<CollectionProfile> = emptyList(),
+        readCover: (String) -> InputStream?): ExportResult {
         require(items.size <= MAX_ITEMS) { "Backups support up to $MAX_ITEMS titles." }
+        CollectionJson.decode(CollectionJson.encode(collections))
         var missing = 0
         var total = 0
         val portable = mutableListOf<ShelfItem>()
@@ -40,7 +42,7 @@ object ShelfBackup {
                 portable += item.copy(cover = path)
             }
             val manifest = JSONObject().put("format", "myshelf").put("version", 1)
-                .put("items", ShelfJson.encode(portable)).toString(2).toByteArray(Charsets.UTF_8)
+                .put("items", ShelfJson.encode(portable)).put("collections", CollectionJson.encode(collections)).toString(2).toByteArray(Charsets.UTF_8)
             require(manifest.size <= MAX_MANIFEST) { "Shelf details exceed the 4 MB backup limit." }
             zip.putNextEntry(ZipEntry("shelf.json")); zip.write(manifest); zip.closeEntry()
         }
@@ -70,7 +72,8 @@ object ShelfBackup {
         require(array.length() <= MAX_ITEMS) { "Too many titles in backup." }
         val items = ShelfJson.decode(array)
         require(items.all { it.cover.isBlank() || (coverName.matches(it.cover) && covers.containsKey(it.cover)) }) { "A cover is missing or invalid." }
-        return ImportedShelf(items, covers)
+        val collections = if (root.has("collections")) CollectionJson.decode(root.getJSONArray("collections")) else emptyList()
+        return ImportedShelf(items, covers, collections)
     }
 
     private fun readLimited(input: InputStream, limit: Int): ByteArray {

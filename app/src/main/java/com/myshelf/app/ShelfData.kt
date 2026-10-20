@@ -38,7 +38,7 @@ fun filterShelf(items: List<ShelfItem>, type: MediaType?, genre: String?, collec
     items.filter { item ->
         (type == null || item.type == type) &&
             (genre == null || (type != null && item.type == type && item.genre.equals(genre, true))) &&
-            (collection == null || item.collection.equals(collection, true)) &&
+            (collection == null || collectionKey(item.collection) == collectionKey(collection)) &&
             (status == null || status.matches(item)) &&
             (query.isBlank() || listOf(item.title, item.creator, item.collection).any { it.contains(query.trim(), true) })
     }
@@ -73,6 +73,36 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var items by mutableStateOf(readItems())
         private set
+    var collectionProfiles by mutableStateOf(readCollectionProfiles())
+        private set
+
+    fun collectionProfile(name: String): CollectionProfile = collectionProfiles.find { collectionKey(it.name) == collectionKey(name) }
+        ?: CollectionProfile(name.trim())
+
+    private fun readCollectionProfiles(): List<CollectionProfile> = try {
+        CollectionJson.decode(JSONArray(prefs.getString("collections", "[]")))
+    } catch (_: Exception) {
+        loadError = "Couldn't load your collections. Restart the app to try again."
+        emptyList()
+    }
+
+    fun updateCollection(original: String, updated: CollectionProfile): String? {
+        if (loadError != null || transferBusy) return "Your shelf is busy. Try again."
+        return try {
+            val next = customizeCollection(items, collectionProfiles, original, updated)
+            val oldKey = collectionKey(original)
+            val newKey = collectionKey(updated.name)
+            val sort = collectionSorts[oldKey]
+            val nextSorts = (collectionSorts - oldKey).let { if (sort == null) it else it + (newKey to sort) }
+            val editor = prefs.edit().putString("items", ShelfJson.encode(next.items).toString())
+                .putString("collections", CollectionJson.encode(next.profiles).toString())
+                .remove("sort_inside_collection:$oldKey")
+            if (sort != null) editor.putString("sort_inside_collection:$newKey", sort.name)
+            editor.apply()
+            items = next.items; collectionProfiles = next.profiles; collectionSorts = nextSorts
+            null
+        } catch (e: IllegalArgumentException) { e.message ?: "Couldn't update this collection." }
+    }
 
     private fun readItems(): List<ShelfItem> = try {
         ShelfJson.decode(JSONArray(prefs.getString("items", "[]")))
@@ -101,7 +131,8 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         items = restoreTitle(items, removed); persist()
     }
     private fun persist() {
-        prefs.edit().putString("items", ShelfJson.encode(items).toString()).apply()
+        prefs.edit().putString("items", ShelfJson.encode(items).toString())
+            .putString("collections", CollectionJson.encode(collectionProfiles).toString()).apply()
     }
 
     fun setTheme(mode: ThemeMode) { themeMode = mode; prefs.edit().putString("theme", mode.name).apply() }
@@ -127,13 +158,14 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
     fun exportShelf(uri: Uri) {
         if (transferBusy || loadError != null) return
         val snapshot = items.toList()
+        val collectionSnapshot = collectionProfiles.toList()
         transferBusy = true; transferMessage = null
         viewModelScope.launch {
             try {
                 val result = withContext(Dispatchers.IO) {
                     val resolver = getApplication<Application>().contentResolver
                     val output = requireNotNull(resolver.openOutputStream(uri, "wt"))
-                    output.use { ShelfBackup.write(it, snapshot) { cover -> resolver.openInputStream(Uri.parse(cover)) } }
+                    output.use { ShelfBackup.write(it, snapshot, collectionSnapshot) { cover -> resolver.openInputStream(Uri.parse(cover)) } }
                 }
                 transferMessage = "Exported ${result.titles} titles." + if (result.missingCovers > 0)
                     " ${result.missingCovers} unavailable covers skipped." else ""
@@ -168,6 +200,7 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         val backup = pendingImport ?: return
         if (transferBusy || loadError != null) return
         val previous = items
+        val previousCollections = collectionProfiles
         val changes = previewChanges(previous, backup.items)
         val incoming = if (mode == ImportMode.SKIP_EXISTING) changes.added else backup.items
         transferBusy = true; transferMessage = null
@@ -184,11 +217,12 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
                             item.copy(cover = Uri.fromFile(file).toString())
                         }
                     }
-                    val combined = mergeShelf(previous, imported, mode)
-                    check(prefs.edit().putString("items", ShelfJson.encode(combined).toString()).commit()) { "Couldn't save imported titles." }
+                    val combined = mergeCollectionData(previous, previousCollections, imported, backup.collections, mode)
+                    check(prefs.edit().putString("items", ShelfJson.encode(combined.items).toString())
+                        .putString("collections", CollectionJson.encode(combined.profiles).toString()).commit()) { "Couldn't save imported titles." }
                     combined
                 }
-                items = next; pendingImport = null
+                items = next.items; collectionProfiles = next.profiles; pendingImport = null
                 transferMessage = when (mode) {
                     ImportMode.REPLACE -> "Restored ${incoming.size} titles."
                     ImportMode.UPDATE_MATCHING -> "Added ${changes.added.size} titles; updated ${changes.matching.size}."
