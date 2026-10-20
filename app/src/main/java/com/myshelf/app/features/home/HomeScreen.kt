@@ -80,7 +80,9 @@ private fun HomeCarousel(title: String, titles: List<ShelfItem>, emptyText: Stri
                 items(titles, key = { "title:${it.id}" }, contentType = { "title" }) {
                     HomeTitleTile(it, tileWidth, posterHeight, lines, onClick = { onOpen(it) }, onLongClick = { onLongPress(it) })
                 }
-                item(key = "view-all", contentType = "view-all") { HomeViewAllTile("View all $title", tileWidth, posterHeight, onViewAll) }
+                if (titles.isNotEmpty()) item(key = "view-all", contentType = "view-all") {
+                    HomeViewAllTile("View all $title", tileWidth, posterHeight, onViewAll)
+                }
             }
         }
     }
