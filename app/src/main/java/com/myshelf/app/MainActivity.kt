@@ -95,13 +95,12 @@ class MainActivity : FragmentActivity() {
 private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiometric: () -> Unit) {
     var typeName by rememberSaveable { mutableStateOf<String?>(null) }
     val type = typeName?.let(MediaType::valueOf)
-    var genre by rememberSaveable { mutableStateOf<String?>(null) }
     var collection by rememberSaveable { mutableStateOf<String?>(null) }
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editing by vm::editing
     val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
-    val visible = sortShelf(filterShelf(vm.items, type, genre, collection, query), itemOrder)
+    val visible = sortShelf(filterShelf(vm.items, type, null, collection, query), itemOrder)
     when {
         editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
@@ -115,9 +114,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically) {
                         if (tab == 0 || collection != null) {
-                            ShelfFilters(type, genre,
-                                vm.items.filter { it.type == type }.map { it.genre }.filter { it.isNotBlank() }.distinct().sorted(),
-                                onType = { typeName = it?.name; genre = null }, onGenre = { genre = it })
+                            ShelfFilters(type, onType = { typeName = it?.name })
                         } else Spacer(Modifier.weight(1f))
                         AddShelfButton {
                             editing = ShelfItem(collection = collection.orEmpty())
@@ -129,7 +126,7 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                 NavigationBar(containerColor = Paper) {
                     NavigationBarItem(selected = tab == 0, enabled = !vm.transferBusy, onClick = { tab = 0; collection = null },
                         icon = { Icon(Icons.AutoMirrored.Outlined.MenuBook, null) }, label = { Text("My shelf") })
-                    NavigationBarItem(selected = tab == 1, enabled = !vm.transferBusy, onClick = { tab = 1; typeName = null; genre = null; collection = null },
+                    NavigationBarItem(selected = tab == 1, enabled = !vm.transferBusy, onClick = { tab = 1; typeName = null; collection = null },
                         icon = { Icon(Icons.Outlined.CollectionsBookmark, null) }, label = { Text("Collections") })
                     NavigationBarItem(selected = tab == 2, enabled = !vm.transferBusy, onClick = { tab = 2 },
                         icon = { Icon(Icons.Outlined.Settings, null) }, label = { Text("Settings") })

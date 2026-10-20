@@ -24,7 +24,7 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 
 @Composable
-fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType: (MediaType?) -> Unit, onGenre: (String?) -> Unit) {
+fun ShelfFilters(type: MediaType?, onType: (MediaType?) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val offset = with(LocalDensity.current) { 72.dp.roundToPx() }
     val configuration = LocalConfiguration.current
@@ -32,7 +32,7 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
     val menuWidth = minOf(200.dp, (configuration.screenWidthDp - 32).coerceAtLeast(0).dp)
     Box {
         FloatingActionButton(onClick = { expanded = true }, modifier = Modifier.size(56.dp).semantics {
-            contentDescription = "Filter: ${type?.label ?: "All media"}${genre?.let { ", $it" }.orEmpty()}"
+            contentDescription = "Filter: ${type?.label ?: "All media"}"
         }, shape = RoundedCornerShape(18.dp), containerColor = if (type == null) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.primary,
             contentColor = if (type == null) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onPrimary) {
             Icon(Icons.Outlined.FilterList, null, Modifier.size(26.dp))
@@ -54,17 +54,6 @@ fun ShelfFilters(type: MediaType?, genre: String?, genres: List<String>, onType:
                     }
                     FilterOption(media.label, icon, type == media) { onType(media); expanded = false }
                     if (index < MediaType.entries.lastIndex) FilterDivider()
-                }
-                if (type != null && genres.isNotEmpty()) {
-                    FilterDivider()
-                    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surface) {
-                        Text("Genre · ${type.label}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(12.dp))
-                    }
-                    FilterOption("All genres", Icons.Outlined.Category, genre == null) { onGenre(null); expanded = false }
-                    genres.forEach { value ->
-                        FilterDivider()
-                        FilterOption(value, Icons.Outlined.Category, genre == value) { onGenre(value); expanded = false }
-                    }
                 }
             }
             }

@@ -6,11 +6,11 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 
 - Movies, series, TV shows, comics, books, and other media.
 - Collections that span media types, such as Marvel and DC.
-- Genre filters scoped to one media type. Select Books before filtering book genres.
+- Genre labels on titles, scoped to their media type.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
 - Manual title entry and a cover sheet for device images, clipboard images, and direct image links.
-- A compact squircle + button for the add form, paired with a left-side Filter button that opens floating media and genre shortcuts. Sort stays in the top toolbar.
+- A compact squircle + button for the add form, paired with a left-side Filter button that opens one compact sheet with seven media rows. Sort stays in the top toolbar.
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
 - A third Settings tab with saved System, Dark, and Light themes and six accent colors.
 - A saved Cards per row preference (2, 3, or 4) for the shelf and collection contents.
