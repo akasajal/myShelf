@@ -49,6 +49,15 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         private set
     var cardsPerRow by mutableIntStateOf(prefs.getInt("cards_per_row", 2).coerceIn(2, 4))
         private set
+    var shelfSort by mutableStateOf(runCatching { ItemSort.valueOf(prefs.getString("sort_shelf", "NEWEST")!!) }.getOrDefault(ItemSort.NEWEST))
+        private set
+    var collectionsSort by mutableStateOf(runCatching { CollectionSort.valueOf(prefs.getString("sort_collections", "RECENT")!!) }.getOrDefault(CollectionSort.RECENT))
+        private set
+    private var collectionSorts by mutableStateOf(prefs.all.mapNotNull { (key, value) ->
+        if (key.startsWith("sort_inside_collection:")) runCatching {
+            key.removePrefix("sort_inside_collection:") to ItemSort.valueOf(value as String)
+        }.getOrNull() else null
+    }.toMap())
     var transferBusy by mutableStateOf(false)
         private set
     var transferMessage by mutableStateOf<String?>(null)
@@ -84,6 +93,14 @@ class ShelfViewModel(app: Application) : AndroidViewModel(app) {
         require(count in 2..4)
         cardsPerRow = count
         prefs.edit().putInt("cards_per_row", count).apply()
+    }
+    fun updateShelfSort(order: ItemSort) { shelfSort = order; prefs.edit().putString("sort_shelf", order.name).apply() }
+    fun updateCollectionsSort(order: CollectionSort) { collectionsSort = order; prefs.edit().putString("sort_collections", order.name).apply() }
+    fun sortInsideCollection(name: String): ItemSort = collectionSorts[collectionKey(name)] ?: ItemSort.NEWEST
+    fun updateCollectionSort(name: String, order: ItemSort) {
+        val key = collectionKey(name)
+        collectionSorts = collectionSorts + (key to order)
+        prefs.edit().putString("sort_inside_collection:$key", order.name).apply()
     }
     fun dismissImport() { if (!transferBusy) pendingImport = null }
 

@@ -13,6 +13,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Local persistence between launches, unsaved-edit confirmation, and delete confirmation.
 - A third Settings tab with saved System, Dark, and Light themes and six accent colors.
 - A saved Cards per row preference (2, 3, or 4) for the shelf and collection contents.
+- Sort menus on My Shelf, the collections list, and each collection's contents. Shelf and individual collections remember their own choices; the collections list supports names, title counts, and recent additions. Title lists support added order, alphabetical order, personal rating, and release year. Unrated titles and unknown years appear last for their respective sorts. Sorting uses the stored addition order and leaves saved entries unchanged.
 - Portable ZIP import/export including available covers, with merge or replace on import.
 - Privacy controls for a four-digit PIN, optional biometric unlock, and background locking.
 

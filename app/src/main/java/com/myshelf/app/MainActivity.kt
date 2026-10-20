@@ -101,7 +101,8 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
     var query by rememberSaveable { mutableStateOf("") }
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var editing by vm::editing
-    val visible = filterShelf(vm.items, type, genre, collection, query)
+    val itemOrder = collection?.let(vm::sortInsideCollection) ?: vm.shelfSort
+    val visible = sortShelf(filterShelf(vm.items, type, genre, collection, query), itemOrder)
     when {
         editing != null -> ItemEditor(editing!!, vm.items.map { it.collection }.filter { it.isNotBlank() }.distinct(),
             onBack = { editing = null }, onSave = { vm.save(it); editing = null },
@@ -135,17 +136,20 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                     color = Ink, modifier = Modifier.padding(bottom = 20.dp))
                 vm.loadError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 if (tab == 1 && collection == null) {
-                    val groups = vm.items.filter { it.collection.isNotBlank() }.groupBy { it.collection.lowercase() }
+                    val groups = sortCollections(vm.items, vm.collectionsSort)
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${groups.size} collections", Modifier.weight(1f), fontSize = 12.sp, color = Green)
+                        SortMenu(vm.collectionsSort, CollectionSort.entries, { it.label }, vm::updateCollectionsSort)
+                    }
                     if (groups.isEmpty()) EmptyShelf("No collections yet", "Assign a collection when adding a title.", Modifier.weight(1f))
                     else LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp), contentPadding = PaddingValues(bottom = 100.dp)) {
-                        items(groups.keys.toList()) { key ->
-                            val group = groups.getValue(key)
-                            Card(onClick = { collection = group.first().collection }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+                        items(groups, key = { it.key }) { group ->
+                            Card(onClick = { collection = group.name }, colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                                 Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Outlined.CollectionsBookmark, null, tint = Green)
                                     Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                                        Text(group.first().collection, fontFamily = FontFamily.Serif, fontSize = 24.sp)
-                                        Text("${group.size} titles · ${group.map { it.type }.distinct().size} media types", fontSize = 12.sp)
+                                        Text(group.name, fontFamily = FontFamily.Serif, fontSize = 24.sp)
+                                        Text("${group.items.size} titles · ${group.items.map { it.type }.distinct().size} media types", fontSize = 12.sp)
                                     }
                                     Icon(Icons.Outlined.ChevronRight, null)
                                 }
@@ -166,7 +170,15 @@ private fun ShelfApp(vm: ShelfViewModel, appLock: AppLockViewModel, onEnableBiom
                             items(genres) { g -> FilterChip(genre == g, { genre = g }, label = { Text(g) }) }
                         }
                     }
-                    Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.padding(vertical = 12.dp))
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("${visible.size} titles", fontSize = 12.sp, color = Green, modifier = Modifier.weight(1f))
+                        key(collection) {
+                            SortMenu(itemOrder, ItemSort.entries, { it.label }) { order ->
+                                val name = collection
+                                if (name == null) vm.updateShelfSort(order) else vm.updateCollectionSort(name, order)
+                            }
+                        }
+                    }
                     if (visible.isEmpty()) EmptyShelf(if (vm.items.isEmpty()) "No titles yet" else "No matches",
                         if (vm.items.isEmpty()) "Add a title to get started." else "Try another filter.", Modifier.weight(1f))
                     else LazyVerticalGrid(GridCells.Fixed(vm.cardsPerRow), horizontalArrangement = Arrangement.spacedBy(if (vm.cardsPerRow == 2) 16.dp else 8.dp),
