@@ -10,7 +10,7 @@ object ShelfJson {
             put("genre", item.genre); put("collection", item.collection); put("cover", item.cover)
             put("year", item.year); put("creator", item.creator); put("rating", item.rating)
             put("progress", item.progress.name); put("notes", item.notes)
-            put("seasons", encodeSeasons(item.seasons)); put("seriesEnded", item.seriesEnded)
+            put("seasons", encodeSeasons(item.seasons)); put("seriesEnded", item.seriesEnded); put("seriesDropped", item.seriesDropped)
         }) }
     }
 
@@ -37,6 +37,11 @@ object ShelfJson {
                     val ended = o.get("seriesEnded")
                     require(ended is Boolean) { "Invalid series ending in backup." }
                     ended
+                } else false,
+                seriesDropped = if (o.has("seriesDropped")) {
+                    val dropped = o.get("seriesDropped")
+                    require(dropped is Boolean) { "Invalid dropped series state in backup." }
+                    dropped
                 } else false
             ).let { it.copy(progress = it.seasonProgress()) }
         }

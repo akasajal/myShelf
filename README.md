@@ -9,6 +9,7 @@ A local-first personal Android media tracker, built with Kotlin and Jetpack Comp
 - Genre labels on titles, scoped to their media type.
 - Search across your saved titles, creators, and collections.
 - Personal rating (0–5), progress, year, creator, and private notes.
+- Status filtering beside Sort on the shelf, collections list, and collection contents: On my list, In progress, Caught up, Finished, On hold, and Dropped. Collection counts reflect matching titles. Each screen remembers its status choice alongside search and media filters.
 - One card per series or TV show, with individual season status, ratings, and episode counts inside.
 - A detail page with immediate status, rating, collection, and episode updates; a separate Edit form handles metadata.
 - Long-press title actions, removal with Undo, and duplicate-title warnings when adding or renaming within the same media type.
@@ -51,6 +52,8 @@ All new covers are validated, resized to at most 1,600 pixels on the longest edg
 Open a series or TV show and tap Add season. Each season has a unique number, optional name, status, rating, watched episode count, and optional total. The detail page provides episode −/+ buttons, Mark season finished, and a season edit icon. Done saves season changes immediately on the detail page. In the full title editor, season changes remain part of the draft until Save. Marking a season Finished fills its known episode total. Adding seasons to existing titles is optional and leaves other titles unchanged.
 
 With seasons, the card shows a completion count and derives its status from them. Completing all tracked seasons shows Caught up; enable Series has ended to show Finished instead. Add newly released seasons manually. Season details stay on-device and travel with ZIP backups; older backups without seasons still import.
+
+Dropped is available for titles and individual seasons. Use Drop series in the detail page's status menu to stop tracking a show without changing completed seasons; Resume series clears that choice. Updating episode progress also resumes it. The full editor provides Drop/Resume beside the derived status.
 
 ## App lock
 

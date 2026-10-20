@@ -54,11 +54,12 @@ class ShelfChangesTest {
     }
 
     @Test fun browsingContextsRoundTripWithoutLeakingQueriesOrFiltersBetweenScreens() {
-        val contexts = mapOf("shelf" to BrowsingContext("Dune", "BOOK"),
-            "collection:mcu" to BrowsingContext("Loki", "SERIES"), "collection:dc" to BrowsingContext())
+        val contexts = mapOf("shelf" to BrowsingContext("Dune", "BOOK", "DROPPED"),
+            "collection:mcu" to BrowsingContext("Loki", "SERIES", "ACTIVE"), "collection:dc" to BrowsingContext())
         val restored = decodeBrowsingContexts(encodeBrowsingContexts(contexts))
         assertEquals(contexts, restored)
         assertEquals(BrowsingContext(), restored.getValue("collection:dc"))
         assertTrue(decodeBrowsingContexts(encodeBrowsingContexts(emptyMap())).isEmpty())
+        assertEquals(BrowsingContext("Dune", "BOOK"), decodeBrowsingContexts("""{"shelf":{"query":"Dune","media":"BOOK"}}""").getValue("shelf"))
     }
 }

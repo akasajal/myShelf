@@ -64,6 +64,30 @@ class SeasonsTest {
         assertEquals("", ShelfJson.decodeSeasons(json).single().name)
     }
 
+    @Test fun droppedSeasonsPersistAndResumingEpisodesReactivatesTheSeries() {
+        val dropped = series.withSeason(series.seasons.last().withProgress(Progress.DROPPED))
+        assertEquals(Progress.DROPPED, dropped.seasonProgress())
+        assertEquals("Dropped", dropped.statusLabel)
+        val bytes = ByteArrayOutputStream()
+        val movie = ShelfItem(title = "Stopped movie", progress = Progress.DROPPED)
+        ShelfBackup.write(bytes, listOf(dropped, movie)) { null }
+        assertEquals(listOf(dropped, movie), ShelfBackup.read(bytes.toByteArray().inputStream()).items)
+        assertEquals(Progress.ACTIVE, dropped.withSeason(dropped.seasons.last().withWatched(1)).seasonProgress())
+        assertEquals(Progress.PAUSED, series.withSeason(series.seasons.last().withProgress(Progress.PAUSED)).seasonProgress())
+    }
+
+    @Test fun droppingWholeSeriesPreservesFinishedSeasonsAndSurvivesBackup() {
+        val item = series.copy(seriesDropped = true, progress = Progress.DROPPED)
+        assertEquals("Dropped", item.statusLabel)
+        assertEquals(Progress.FINISHED, item.seasons.first().progress)
+        val bytes = ByteArrayOutputStream()
+        ShelfBackup.write(bytes, listOf(item)) { null }
+        assertEquals(listOf(item), ShelfBackup.read(bytes.toByteArray().inputStream()).items)
+        assertEquals("In progress", item.withSeason(item.seasons.last().withWatched(1)).statusLabel)
+        assertEquals("Dropped", item.withSeason(item.seasons.first().copy(rating = 5)).statusLabel)
+        assertFalse(item.copy(seasons = listOf(Season(1, Progress.FINISHED))).isCaughtUp)
+    }
+
     @Test fun oldBackupsWithoutSeasonFieldsStillLoad() {
         val legacy = ShelfJson.encode(listOf(series.copy(seasons = emptyList())))
         legacy.getJSONObject(0).remove("seasons")

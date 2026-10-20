@@ -41,6 +41,7 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     var notes by rememberSaveable(initial.id) { mutableStateOf(initial.notes) }
     var seasons by rememberSaveable(initial.id, stateSaver = SeasonListSaver) { mutableStateOf(initial.seasons) }
     var seriesEnded by rememberSaveable(initial.id) { mutableStateOf(initial.seriesEnded) }
+    var seriesDropped by rememberSaveable(initial.id) { mutableStateOf(initial.seriesDropped) }
     var confirmDelete by remember { mutableStateOf(false) }
     var confirmDiscard by remember { mutableStateOf(false) }
     var showCoverSheet by rememberSaveable(initial.id) { mutableStateOf(false) }
@@ -48,7 +49,7 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
     val coverBusy = coverImporter.busyFor == initial.id
     val current = initial.copy(title = title.trim(), type = type, genre = genre.trim(), collection = collection.trim(),
         cover = cover.trim(), creator = creator.trim(), year = year.trim(), rating = rating, progress = progress, notes = notes.trim(),
-        seasons = seasons, seriesEnded = seriesEnded)
+        seasons = seasons, seriesEnded = seriesEnded, seriesDropped = seriesDropped)
     val exit = { coverImporter.cancel(initial.id); onBack() }
     val leave = { if (current != initial) confirmDiscard = true else exit() }
     BackHandler(onBack = leave)
@@ -133,11 +134,12 @@ fun ItemEditor(initial: ShelfItem, collections: List<String>, onBack: () -> Unit
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text("Status", Modifier.weight(1f))
                     Text(current.statusLabel, color = MaterialTheme.colorScheme.primary)
+                    TextButton(onClick = { seriesDropped = !seriesDropped }) { Text(if (seriesDropped) "Resume" else "Drop") }
                 }
             } else {
                 Text("Status", fontFamily = FontFamily.Serif, fontSize = 21.sp)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Progress.entries.forEach { state -> FilterChip(progress == state, { progress = state }, label = { Text(state.label) }) }
+                    Progress.entries.forEach { state -> FilterChip(progress == state, { progress = state; seriesDropped = false }, label = { Text(state.label) }) }
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {

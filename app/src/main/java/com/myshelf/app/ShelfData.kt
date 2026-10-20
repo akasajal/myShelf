@@ -22,7 +22,7 @@ enum class MediaType(val label: String, val singular: String) {
     COMIC("Comics", "Comic"), BOOK("Books", "Book"), OTHER("Other", "Other")
 }
 enum class Progress(val label: String) {
-    PLANNED("On my list"), ACTIVE("In progress"), FINISHED("Finished"), PAUSED("On hold")
+    PLANNED("On my list"), ACTIVE("In progress"), FINISHED("Finished"), PAUSED("On hold"), DROPPED("Dropped")
 }
 data class ShelfItem(
     val id: String = UUID.randomUUID().toString(),
@@ -30,14 +30,16 @@ data class ShelfItem(
     val genre: String = "", val collection: String = "", val cover: String = "",
     val year: String = "", val creator: String = "", val rating: Int = 0,
     val progress: Progress = Progress.PLANNED, val notes: String = "",
-    val seasons: List<Season> = emptyList(), val seriesEnded: Boolean = false
+    val seasons: List<Season> = emptyList(), val seriesEnded: Boolean = false, val seriesDropped: Boolean = false
 )
 
-fun filterShelf(items: List<ShelfItem>, type: MediaType?, genre: String?, collection: String?, query: String): List<ShelfItem> =
+fun filterShelf(items: List<ShelfItem>, type: MediaType?, genre: String?, collection: String?, query: String,
+    status: StatusFilter? = null): List<ShelfItem> =
     items.filter { item ->
         (type == null || item.type == type) &&
             (genre == null || (type != null && item.type == type && item.genre.equals(genre, true))) &&
             (collection == null || item.collection.equals(collection, true)) &&
+            (status == null || status.matches(item)) &&
             (query.isBlank() || listOf(item.title, item.creator, item.collection).any { it.contains(query.trim(), true) })
     }
 

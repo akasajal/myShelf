@@ -93,8 +93,12 @@ private fun StatusDialog(item: ShelfItem, onDismiss: () -> Unit, onSave: (ShelfI
                     }
                 }
             } else Progress.entries.forEach { value ->
-                TextButton(onClick = { onSave(item.copy(progress = value)) }, modifier = Modifier.fillMaxWidth()) { Text(value.label) }
+                TextButton(onClick = { onSave(item.copy(progress = value, seriesDropped = false)) }, modifier = Modifier.fillMaxWidth()) { Text(value.label) }
             }
+            if (tracked) TextButton(onClick = {
+                val updated = item.copy(seriesDropped = !item.seriesDropped)
+                onSave(updated.copy(progress = updated.seasonProgress()))
+            }) { Text(if (item.seriesDropped) "Resume series" else "Drop series") }
         }
     }, confirmButton = { TextButton(onDismiss) { Text("Close") } })
 }

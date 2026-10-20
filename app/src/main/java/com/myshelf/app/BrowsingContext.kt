@@ -3,7 +3,7 @@ package com.myshelf.app
 import androidx.compose.runtime.saveable.Saver
 import org.json.JSONObject
 
-data class BrowsingContext(val query: String = "", val media: String? = null)
+data class BrowsingContext(val query: String = "", val media: String? = null, val status: String? = null)
 
 internal val BrowsingContextsSaver = Saver<Map<String, BrowsingContext>, String>(
     save = { encodeBrowsingContexts(it) },
@@ -11,13 +11,14 @@ internal val BrowsingContextsSaver = Saver<Map<String, BrowsingContext>, String>
 )
 
 internal fun encodeBrowsingContexts(contexts: Map<String, BrowsingContext>): String = JSONObject().apply {
-    contexts.forEach { (route, context) -> put(route, JSONObject().put("query", context.query).put("media", context.media)) }
+    contexts.forEach { (route, context) -> put(route, JSONObject().put("query", context.query).put("media", context.media).put("status", context.status)) }
 }.toString()
 
 internal fun decodeBrowsingContexts(saved: String): Map<String, BrowsingContext> {
         val json = JSONObject(saved)
         return json.keys().asSequence().associateWith { route ->
             val context = json.getJSONObject(route)
-            BrowsingContext(context.optString("query"), if (context.has("media")) context.getString("media") else null)
+            BrowsingContext(context.optString("query"), if (context.has("media")) context.getString("media") else null,
+                if (context.has("status")) context.getString("status") else null)
         }
 }
