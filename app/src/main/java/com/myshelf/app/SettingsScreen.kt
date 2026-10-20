@@ -158,14 +158,16 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
         Spacer(Modifier.height(30.dp))
         SectionLabel("Privacy")
         Spacer(Modifier.height(12.dp))
-        PrivacyRow("App Lock", if (lock.enabled) "Tap to disable" else "Set a 4-digit PIN",
-            checked = lock.enabled, enabled = !lock.busy, accent = vm.accent.swatch) {
-            lock.clearMessage(); pinDialog = lock.enabled
-        }
-        HorizontalDivider(color = outline.copy(alpha = .25f))
-        PrivacyRow("Biometric", if (lock.biometricAvailable) "Unlock with fingerprint or face" else "Set up biometrics on your device",
-            checked = lock.biometricEnabled, enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled), accent = vm.accent.swatch) { value ->
-            if (value) onEnableBiometric() else lock.disableBiometrics()
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            PrivacyToggle("App Lock", checked = lock.enabled, enabled = !lock.busy,
+                accent = vm.accent.swatch, modifier = Modifier.weight(1f)) {
+                lock.clearMessage(); pinDialog = lock.enabled
+            }
+            PrivacyToggle("Biometric", checked = lock.biometricEnabled,
+                enabled = lock.enabled && !lock.busy && (lock.biometricAvailable || lock.biometricEnabled),
+                accent = vm.accent.swatch, modifier = Modifier.weight(1f)) { value ->
+                if (value) onEnableBiometric() else lock.disableBiometrics()
+            }
         }
         if (pinDialog == null) lock.message?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Spacer(Modifier.height(32.dp))
@@ -178,13 +180,12 @@ fun SettingsScreen(vm: ShelfViewModel, lock: AppLockViewModel, onEnableBiometric
 }
 
 @Composable
-private fun PrivacyRow(title: String, subtitle: String, checked: Boolean, enabled: Boolean, accent: Color, onChange: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
-        .heightIn(min = 88.dp).padding(vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f).padding(end = 16.dp)) {
-            Text(title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .5f))
-            Text(subtitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else .5f))
-        }
+private fun PrivacyToggle(title: String, checked: Boolean, enabled: Boolean, accent: Color,
+    modifier: Modifier = Modifier, onChange: (Boolean) -> Unit) {
+    Row(modifier.toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
+        .heightIn(min = 56.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, Modifier.weight(1f).padding(end = 6.dp), fontSize = 14.sp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else .5f))
         Switch(checked = checked, onCheckedChange = null, enabled = enabled,
             colors = SwitchDefaults.colors(checkedTrackColor = accent, checkedThumbColor = Color.White, checkedBorderColor = Color.Transparent))
     }
