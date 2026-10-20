@@ -1,9 +1,8 @@
 package com.myshelf.app.navigation
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
@@ -16,6 +15,8 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,26 +33,25 @@ import kotlin.math.abs
 internal fun ShelfNavigationBar(selected: MainTab, enabled: Boolean, onSelect: (MainTab) -> Unit) {
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         val pillColor = MaterialTheme.colorScheme.primaryContainer
-        val motion = updateTransition(selected.ordinal, label = "Navigation pill")
-        // The leading edge moves first; the trailing edge catches up like a droplet.
-        // Both springs retain their current position and velocity when taps interrupt a move.
-        val left = motion.animateFloat(transitionSpec = {
-            spring(dampingRatio = .85f, stiffness = if (targetState > initialState) 220f else 500f)
-        }, label = "Pill left edge") { it.toFloat() }
-        val right = motion.animateFloat(transitionSpec = {
-            spring(dampingRatio = .85f, stiffness = if (targetState > initialState) 500f else 220f)
-        }, label = "Pill right edge") { it.toFloat() }
+        val position = remember { Animatable(selected.ordinal.toFloat(), visibilityThreshold = .0005f) }
+        LaunchedEffect(selected) {
+            position.animateTo(selected.ordinal.toFloat(), spring(dampingRatio = 1f, stiffness = 320f))
+        }
         Box(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
             Canvas(Modifier.matchParentSize()) {
                 val gap = 4.dp.toPx()
                 val width = (size.width - gap * (MainTab.entries.size - 1)) / MainTab.entries.size
                 val stride = width + gap
-                val start = (left.value * stride).coerceIn(0f, size.width - width)
-                val end = (right.value * stride + width).coerceIn(start + width, size.width)
-                val squeeze = (abs(right.value - left.value) * 4.dp.toPx()).coerceAtMost(6.dp.toPx())
+                val start = (position.value * stride).coerceIn(0f, size.width - width)
+                // One position controls the whole pill. Stretch follows its speed and
+                // fades naturally to zero, without independent edges snapping into place.
+                val stretch = minOf(abs(position.velocity) * stride * .018f, width * .16f,
+                    start, (size.width - start - width).coerceAtLeast(0f))
+                val squeeze = if (width > 0f) stretch / width * 8.dp.toPx() else 0f
                 drawRoundRect(
                     color = pillColor,
-                    topLeft = Offset(start, squeeze), size = Size(end - start, size.height - squeeze * 2),
+                    topLeft = Offset(start - stretch, squeeze),
+                    size = Size(width + stretch * 2, size.height - squeeze * 2),
                     cornerRadius = CornerRadius(28.dp.toPx())
                 )
             }
